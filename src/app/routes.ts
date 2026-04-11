@@ -19,32 +19,37 @@ import SystemArchitecturePage from "./pages/SystemArchitecturePage";
 import HelpCenterPage from "./pages/HelpCenterPage";
 import SettingsPage from "./pages/SettingsPage";
 
-export const router = createBrowserRouter([
+export const router = createBrowserRouter(
+  [
+    {
+      path: "/login",
+      Component: LoginPage,
+    },
+    {
+      path: "/",
+      Component: Layout,
+      children: [
+        { index: true, Component: DashboardPage },
+        { path: "workforce-management", Component: WorkforceManagementPage },
+        { path: "workforce-availability", Component: WorkforceAvailabilityPage },
+        { path: "menu-input", Component: MenuInputPage },
+        { path: "workstation-setup", Component: WorkstationSetupPage },
+        { path: "demand-input", Component: DemandInputPage },
+        { path: "skill-matrix", Component: SkillMatrixPage },
+        { path: "task-manager", Component: TaskManagerPage },
+        { path: "takt-time", Component: TaktTimeAnalysisPage },
+        { path: "utilization", Component: UtilizationMonitorPage },
+        { path: "bottleneck", Component: BottleneckDetectorPage },
+        { path: "station-assignment", Component: StationAssignmentPage },
+        { path: "performance", Component: PerformanceReportsPage },
+        { path: "kitchen-layout", Component: KitchenLayoutEditorPage },
+        { path: "system-architecture", Component: SystemArchitecturePage },
+        { path: "help-center", Component: HelpCenterPage },
+        { path: "settings", Component: SettingsPage },
+      ],
+    },
+  ],
   {
-    path: "/login",
-    Component: LoginPage,
-  },
-  {
-    path: "/",
-    Component: Layout,
-    children: [
-      { index: true, Component: DashboardPage },
-      { path: "workforce-management", Component: WorkforceManagementPage },
-      { path: "workforce-availability", Component: WorkforceAvailabilityPage },
-      { path: "menu-input", Component: MenuInputPage },
-      { path: "workstation-setup", Component: WorkstationSetupPage },
-      { path: "demand-input", Component: DemandInputPage },
-      { path: "skill-matrix", Component: SkillMatrixPage },
-      { path: "task-manager", Component: TaskManagerPage },
-      { path: "takt-time", Component: TaktTimeAnalysisPage },
-      { path: "utilization", Component: UtilizationMonitorPage },
-      { path: "bottleneck", Component: BottleneckDetectorPage },
-      { path: "station-assignment", Component: StationAssignmentPage },
-      { path: "performance", Component: PerformanceReportsPage },
-      { path: "kitchen-layout", Component: KitchenLayoutEditorPage },
-      { path: "system-architecture", Component: SystemArchitecturePage },
-      { path: "help-center", Component: HelpCenterPage },
-      { path: "settings", Component: SettingsPage },
-    ],
-  },
-]);
+    basename: "/Balansya1/", 
+  }
+);
