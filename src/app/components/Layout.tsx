@@ -72,7 +72,8 @@ const navGroups = [
 ];
 
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // 1. Default to false so it doesn't cover mobile screens on initial load
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const toggleGroup = (label: string) => {
@@ -86,65 +87,65 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top Navigation */}
       <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 h-16">
-        <div className="h-full px-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="h-full px-4 md:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3 md:gap-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
+              className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
+              aria-label="Toggle Menu"
             >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {sidebarOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
             </button>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Balansya</h1>
-              <p className="text-xs text-gray-600">Workforce Optimization System</p>
+              <h1 className="text-lg md:text-xl font-semibold text-gray-900 truncate">Balansya</h1>
+              <p className="hidden sm:block text-xs text-gray-600">Workforce Optimization System</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 md:gap-3">
             <NavLink
               to="/help-center"
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors hidden sm:block"
               title="Help Center"
             >
               <HelpCircle className="w-5 h-5 text-gray-600" />
             </NavLink>
             
-            {/* The new functional bell goes here */}
             <NotificationPopover /> 
             
             <NavLink
               to="/settings"
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors hidden sm:block"
               title="Settings"
             >
               <Settings className="w-5 h-5 text-gray-600" />
             </NavLink>
-            <button className="w-9 h-9 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors">
-              <User className="w-5 h-5 text-gray-600" />
+            <button className="w-8 h-8 md:w-9 md:h-9 ml-1 md:ml-0 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors">
+              <User className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
             </button>
           </div>
         </div>
       </header>
 
       {/* Workflow Progress Bar */}
-      <div className="fixed top-16 left-0 right-0 z-40">
+      <div className="fixed top-16 left-0 right-0 z-40 bg-gray-50 shadow-sm md:shadow-none">
         <WorkflowProgress />
       </div>
 
-      <div className="flex pt-[120px]">
+      <div className="flex flex-1 pt-[130px] md:pt-[120px]">
         {/* Sidebar */}
         <aside
           className={`
             fixed left-0 top-[120px] bottom-0 w-64 bg-white border-r border-gray-200
-            transition-transform duration-300 z-40 overflow-y-auto
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            lg:translate-x-0
+            transition-transform duration-300 ease-in-out z-50 overflow-y-auto
+            ${sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+            lg:translate-x-0 lg:shadow-none lg:z-30
           `}
         >
-          <nav className="p-4">
+          <nav className="p-4 pb-24 lg:pb-4">
             {navGroups.map((group) => (
               <div key={group.label} className="mb-6">
                 <button
@@ -166,6 +167,7 @@ export default function Layout() {
                           key={item.path}
                           to={item.path}
                           end={item.path === '/'}
+                          onClick={() => setSidebarOpen(false)} // 2. Auto-close sidebar on mobile after clicking
                           className={({ isActive }) =>
                             `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                               isActive
@@ -186,19 +188,22 @@ export default function Layout() {
           </nav>
         </aside>
 
-        {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : ''}`}>
-          <div className="p-8">
+        {/* Main Content Area */}
+        {/* 3. min-w-0 prevents horizontal blowout, lg:ml-64 permanently offsets on desktop */}
+        <main className="flex-1 w-full min-w-0 lg:ml-64 flex flex-col">
+          {/* Responsive padding: p-4 on mobile, p-8 on desktop */}
+          <div className="p-4 md:p-8 flex-1 overflow-x-hidden">
             <Outlet />
           </div>
         </main>
       </div>
 
-      {/* Mobile overlay */}
+      {/* Mobile Overlay Background - Clicking this closes the menu */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
     </div>
