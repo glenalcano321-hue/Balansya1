@@ -1,0 +1,99 @@
+Dashboard Layout Structure
+
+Top Navigation Bar
+Purpose: system navigation.
+
+Include:
+• Dashboard
+• Workforce Data
+• Workload Data
+• Optimization
+• Reports
+• Settings
+
+This allows users to move between data input, analysis, and results.
+
+Left Sidebar Menu
+Purpose: quick access to core modules.
+
+Sections:
+• Skill Matrix
+• Task Manager
+• Takt Time Analysis
+• Utilization Monitor
+• Bottleneck Detector
+• Station Assignment
+• Performance Reports
+
+This reflects the main processing modules of your system.
+
+Main Dashboard Area
+
+Section 1. Key Performance Indicators
+Place four summary cards at the top.
+
+Display:
+• Current Takt Time
+• Average Workforce Utilization
+• Bottleneck Stations
+• Line Efficiency
+
+These give immediate operational insight.
+
+Section 2. Workload Visualization
+Charts showing:
+• Task duration distribution
+• Demand versus available workforce
+• Workstation cycle times
+
+A bar chart or line chart works well.
+
+Section 3. Workforce Utilization Panel
+Display:
+• Worker name
+• Assigned station
+• Skill level
+• Utilization percentage
+
+Use a table with progress bars.
+
+Section 4. Bottleneck Detection Panel
+Highlight stations where utilization exceeds 100 percent.
+
+Display:
+• Station ID
+• Cycle time
+• Utilization rate
+• Warning indicator
+
+Section 5. Station Assignment Map
+Visual layout of the production line or kitchen workflow.
+
+Show:
+• Task distribution
+• Assigned workers
+• workload balance
+
+Section 6. Alerts and Recommendations
+System generated insights.
+
+Examples:
+• "Station 3 overloaded by 18 percent."
+• "Reassign Worker B to Station 4."
+
+Footer Section
+Display system information.
+
+Include:
+• Last optimization run
+• Data update timestamp
+• Export report button
+
+Design Principles
+
+• Simple layout
+• Clear metrics
+• Minimal input steps
+• Visual indicators for problems
+
+This makes the system easy for SME operators to use.

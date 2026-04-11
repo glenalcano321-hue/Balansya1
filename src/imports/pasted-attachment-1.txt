@@ -1,0 +1,136 @@
+Each page should support one system function. Keep layout consistent so users learn it quickly. Use the same header, sidebar, and table style across all pages.
+
+Skill Matrix Page
+Purpose: store and update worker skill levels.
+
+Main components:
+• Worker list table
+• Skill rating panel
+• Edit and update controls
+
+Layout:
+Top section
+• Search worker
+• Add new worker button
+
+Main table columns
+• Worker name
+• Position
+• Skill category
+• Skill level rating (1–5)
+• Certification or experience
+
+Right side panel
+• Skill radar chart
+• Recommended station compatibility
+
+Task Manager Page
+Purpose: manage operational tasks and standard times.
+
+Top section
+• Add task button
+• Import task list
+
+Main table
+• Task ID
+• Task name
+• Standard time
+• Required skill
+• Workstation category
+
+Side panel
+• Task duration distribution chart
+• Task complexity indicator
+
+Takt Time Analysis Page
+Purpose: compute takt time based on demand.
+
+Top input panel
+• Available working time
+• Customer demand
+• Production hours
+
+Calculation panel
+• Takt time result
+• Required output rate
+
+Visualization
+• Demand versus capacity graph
+• Workstation cycle time comparison
+
+Utilization Monitor Page
+Purpose: track worker and station utilization.
+
+Main dashboard cards
+• Average utilization
+• Overloaded stations
+• Idle resources
+
+Main table
+• Worker
+• Assigned station
+• Cycle time
+• Utilization percentage
+
+Visual indicator
+• Green below 85 percent
+• Yellow 85 to 100 percent
+• Red above 100 percent
+
+Bottleneck Detector Page
+Purpose: identify stations causing delays.
+
+Main visualization
+• Process flow diagram
+
+Table below
+• Station ID
+• Cycle time
+• Utilization rate
+• Delay impact
+
+Alert panel
+• Bottleneck warning
+• Suggested reassignment
+
+Station Assignment Page
+Purpose: show optimized workforce distribution.
+
+Top section
+• Run optimization button
+
+Main view
+• Production line map
+
+Station cards
+• Station ID
+• Assigned worker
+• Task list
+• Cycle time
+
+Color indicator
+• Balanced
+• Underutilized
+• Overloaded
+
+Performance Report Page
+Purpose: evaluate operational improvement.
+
+Summary metrics
+• Line efficiency
+• Average utilization
+• Idle time reduction
+• Throughput rate
+
+Charts
+• Before versus after efficiency
+• Utilization trend
+• Bottleneck frequency
+
+Export tools
+• Export report
+• Download PDF
+• Data summary table
+
+This structure keeps every module aligned with your system flow:
+Input pages feed the analysis modules, and the analysis modules generate operational outputs.

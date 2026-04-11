@@ -1,0 +1,136 @@
+Create a responsive web application UI for a workforce optimization system called “Balansya”. Use a clean professional dashboard style. Maintain consistent layout and design principles across all pages.
+
+Global Layout
+Create a reusable layout template applied to all pages.
+
+Top Navigation Bar
+Left side: system logo “Balansya”.
+Right side: user profile icon, notifications icon, settings icon.
+
+Left Sidebar Navigation
+Vertical navigation with icons and labels.
+Menu items:
+Dashboard
+Skill Matrix
+Task Manager
+Takt Time Analysis
+Utilization Monitor
+Bottleneck Detector
+Station Assignment
+Performance Reports
+
+Sidebar should collapse on smaller screens.
+
+Main Content Area
+Use a card-based layout with soft shadows and rounded corners.
+Spacing should follow an 8px grid system.
+Use simple neutral colors and clear typography.
+All pages must maintain the same layout structure.
+
+Create the following pages using the same template.
+
+Dashboard Page
+Top KPI cards:
+Takt Time
+Workforce Utilization
+Bottleneck Stations
+Line Efficiency
+
+Middle section:
+Workload visualization chart.
+Workforce utilization table with progress bars.
+
+Bottom section:
+Alert panel showing detected bottlenecks and recommendations.
+
+Skill Matrix Page
+Main table showing:
+Worker Name
+Position
+Skill Category
+Skill Level Rating
+Station Compatibility
+
+Right panel:
+Worker skill radar chart.
+
+Interaction:
+Click worker row to open editable skill profile.
+
+Task Manager Page
+Table showing:
+Task ID
+Task Name
+Standard Time
+Required Skill
+Workstation
+
+Interaction:
+Add Task button opens modal form.
+Edit Task button updates task parameters.
+
+Takt Time Analysis Page
+Input form:
+Available working time
+Customer demand
+Production hours
+
+Output section:
+Calculated takt time.
+Demand versus capacity chart.
+
+Interaction:
+Changing inputs dynamically updates charts.
+
+Utilization Monitor Page
+Worker utilization table with progress bars.
+Summary cards showing average utilization and idle time.
+
+Interaction:
+Hovering over workers highlights utilization distribution.
+
+Bottleneck Detector Page
+Process flow diagram showing workstation nodes.
+
+Table below listing:
+Station ID
+Cycle Time
+Utilization Rate
+Bottleneck Status
+
+Interaction:
+Stations with utilization above 100 percent highlight in red.
+
+Station Assignment Page
+Visual layout of workstation assignments using station cards.
+
+Each card shows:
+Station ID
+Assigned Worker
+Task List
+Cycle Time
+
+Interaction:
+Click “Run Optimization” updates assignments dynamically.
+
+Performance Reports Page
+Charts displaying:
+Line Efficiency Trend
+Utilization Trend
+Idle Time Reduction
+
+Interaction:
+Filter reports by date range.
+Export report button.
+
+Prototype Interactions
+Create clickable sidebar navigation linking all pages.
+Add hover effects on tables, cards, and buttons.
+Add modal interactions for adding tasks and editing workers.
+Include transitions between pages for smooth navigation.
+
+Design Style
+Minimalist industrial dashboard.
+Clear hierarchy.
+Data-first layout.
+Consistent spacing and typography across all pages.
