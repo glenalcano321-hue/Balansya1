@@ -17,6 +17,9 @@ function figmaAssetResolver() {
 
 export default defineConfig({
   base: '/Balansya1/',
+  build: {
+    outDir: 'docs', // <--- This forces Vite to build into the 'docs' folder instead of 'dist'
+  },
   plugins: [
     figmaAssetResolver(),
     react(),
