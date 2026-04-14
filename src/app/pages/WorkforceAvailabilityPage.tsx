@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, CheckCircle, XCircle, Coffee, Calendar, ChevronRight } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Coffee, Calendar, ChevronRight, Settings } from 'lucide-react';
 import { Link } from 'react-router';
 import { useWorkforce, WorkerStatus } from '../components/WorkforceState';
 
@@ -11,7 +11,6 @@ const statusConfig = {
 };
 
 export default function WorkforceAvailabilityPage() {
-  // Pull live data directly from the Global Context
   const { workers, setWorkers } = useWorkforce();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -23,7 +22,6 @@ export default function WorkforceAvailabilityPage() {
     setWorkers(workers.map(w => {
       if (w.id === workerId) {
         const newWorker = { ...w, [field]: value };
-        // Recalculate idle time whenever work time or shift duration changes
         newWorker.idleTimeMinutes = Math.max(0, newWorker.shiftDurationMinutes - newWorker.workTimeMinutes);
         return newWorker;
       }
@@ -39,20 +37,29 @@ export default function WorkforceAvailabilityPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Daily Workforce Availability</h2>
           <p className="text-gray-600 mt-1">Set worker attendance and record active time for utilization tracking</p>
         </div>
-        <Link
-          to="/menu-input"
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-        >
-          Next: Menu Input
-          <ChevronRight className="w-4 h-4" />
-        </Link>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <Link
+            to="/workforce-management"
+            className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm w-full sm:w-auto"
+          >
+            <Settings className="w-4 h-4" />
+            Manage Staff
+          </Link>
+          <Link
+            to="/menu-input"
+            className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm w-full sm:w-auto"
+          >
+            Next: Menu Input
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       {/* Date Selector */}
@@ -111,32 +118,31 @@ export default function WorkforceAvailabilityPage() {
 
       {/* Worker Status Grid */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Worker Status & Time Logging</h3>
           <p className="text-sm text-gray-600 mt-1">Update availability and log active work minutes for utilization metrics</p>
         </div>
         
         <div className="divide-y divide-gray-200">
           {workers.map((worker) => {
-            const config = statusConfig[worker.status];
+            const config = statusConfig[worker.status] || statusConfig['unavailable'];
             
-            // Calculate Current Utilization %
             const utilizationPercent = worker.shiftDurationMinutes > 0 
               ? Math.min(100, Math.round((worker.workTimeMinutes / worker.shiftDurationMinutes) * 100))
               : 0;
 
             return (
-              <div key={worker.id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              <div key={worker.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-center">
                   
                   {/* Column 1: Worker Info */}
                   <div className="lg:col-span-4 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="font-semibold text-gray-700">{worker.name.charAt(0)}</span>
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">{worker.name}</div>
-                      <div className="text-sm text-gray-600">{worker.position} • Level {worker.skillLevel}</div>
+                      <div className="text-xs sm:text-sm text-gray-600">{worker.position} • Level {worker.skillLevel}</div>
                     </div>
                   </div>
 
@@ -158,7 +164,7 @@ export default function WorkforceAvailabilityPage() {
                           }`}
                         >
                           <span className="flex items-center gap-1">
-                            <Icon className="w-3.5 h-3.5" />
+                            <Icon className="w-3.5 h-3.5 hidden sm:block" />
                             {cfg.label}
                           </span>
                         </button>
@@ -169,9 +175,9 @@ export default function WorkforceAvailabilityPage() {
                   {/* Column 3: Time Tracking */}
                   <div className="lg:col-span-4">
                     {worker.status === 'present' ? (
-                      <div className="flex items-center gap-4 bg-white border border-gray-200 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 sm:gap-4 bg-white border border-gray-200 p-2 sm:p-3 rounded-lg">
                         <div className="flex-1">
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                          <label className="block text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                             Work (min)
                           </label>
                           <input
@@ -179,12 +185,12 @@ export default function WorkforceAvailabilityPage() {
                             min="0"
                             value={worker.workTimeMinutes}
                             onChange={(e) => updateWorkerTime(worker.id, 'workTimeMinutes', Number(e.target.value))}
-                            className="w-full text-sm p-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-blue-700 bg-blue-50/50"
+                            className="w-full text-xs sm:text-sm p-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-blue-700 bg-blue-50/50"
                           />
                         </div>
                         
                         <div className="flex-1">
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                          <label className="block text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                             Shift (min)
                           </label>
                           <input
@@ -192,14 +198,14 @@ export default function WorkforceAvailabilityPage() {
                             min="1"
                             value={worker.shiftDurationMinutes}
                             onChange={(e) => updateWorkerTime(worker.id, 'shiftDurationMinutes', Number(e.target.value))}
-                            className="w-full text-sm p-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full text-xs sm:text-sm p-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
                           />
                         </div>
 
                         {/* Utilization Mini-Display */}
-                        <div className="flex-1 text-center border-l pl-3">
-                          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Idle</div>
-                          <div className="text-sm font-bold text-orange-600">{worker.idleTimeMinutes}m</div>
+                        <div className="flex-1 text-center border-l pl-2 sm:pl-3">
+                          <div className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Idle</div>
+                          <div className="text-xs sm:text-sm font-bold text-orange-600">{worker.idleTimeMinutes}m</div>
                           <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
                             <div 
                               className={`h-1 rounded-full ${utilizationPercent > 90 ? 'bg-red-500' : utilizationPercent < 50 ? 'bg-orange-500' : 'bg-green-500'}`} 
@@ -209,8 +215,8 @@ export default function WorkforceAvailabilityPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-400 italic text-center p-3 border border-dashed border-gray-200 rounded-lg">
-                        Time tracking disabled ({config.label})
+                      <div className="text-xs sm:text-sm text-gray-400 italic text-center p-3 border border-dashed border-gray-200 rounded-lg">
+                        Time tracking disabled ({config?.label || 'Unknown'})
                       </div>
                     )}
                   </div>
@@ -220,14 +226,6 @@ export default function WorkforceAvailabilityPage() {
             );
           })}
         </div>
-      </div>
-
-      {/* Impact Summary */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h4 className="font-semibold text-blue-900 mb-2">Utilization Tracking Context</h4>
-        <p className="text-sm text-blue-800">
-          You have {stats.present} workers present today. Logging <strong>Work Time</strong> (time spent actively prepping/cooking/serving) against total <strong>Shift Duration</strong> creates the foundation for your Lean Six Sigma utilization metrics. This data is now connected globally and will instantly update the Utilization Monitor dashboard.
-        </p>
       </div>
     </div>
   );

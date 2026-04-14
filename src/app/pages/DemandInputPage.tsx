@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TrendingUp, Calendar, Tag, ShoppingCart, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router';
+import { useDemand } from '../components/DemandContext';
 
 type EventType = 'normal' | 'peak' | 'promo' | 'holiday' | 'bulk-order';
 
@@ -51,13 +52,25 @@ const eventConditions: EventCondition[] = [
 ];
 
 export default function DemandInputPage() {
+  const { demandData, updateDemandData } = useDemand();
+
   const [selectedEvent, setSelectedEvent] = useState<EventType>('normal');
-  const [baselineDemand, setBaselineDemand] = useState(150);
-  const [bulkOrderSize, setBulkOrderSize] = useState(0);
+  const [baselineDemand, setBaselineDemand] = useState(demandData.baselineDemand);
+  const [bulkOrderSize, setBulkOrderSize] = useState(demandData.bulkOrderSize);
   const [notes, setNotes] = useState('');
 
   const currentEvent = eventConditions.find(e => e.type === selectedEvent)!;
   const adjustedDemand = Math.round(baselineDemand * currentEvent.multiplier) + bulkOrderSize;
+
+  useEffect(() => {
+    updateDemandData({
+      baselineDemand,
+      bulkOrderSize,
+      multiplier: currentEvent.multiplier,
+      adjustedDemand
+    });
+  }, [baselineDemand, bulkOrderSize, currentEvent.multiplier, adjustedDemand]);
+
 
   return (
     <div className="space-y-6">
@@ -87,7 +100,7 @@ export default function DemandInputPage() {
             <input
               type="range"
               min="50"
-              max="300"
+              max="500"
               step="10"
               value={baselineDemand}
               onChange={(e) => setBaselineDemand(Number(e.target.value))}
@@ -96,7 +109,7 @@ export default function DemandInputPage() {
             <div className="flex items-center justify-between mt-2">
               <span className="text-sm text-gray-600">50 orders</span>
               <span className="text-2xl font-semibold text-blue-600">{baselineDemand} orders</span>
-              <span className="text-sm text-gray-600">300 orders</span>
+              <span className="text-sm text-gray-600">500 orders</span>
             </div>
           </div>
         </div>
@@ -136,7 +149,6 @@ export default function DemandInputPage() {
         </div>
       </div>
 
-      {/* Bulk Order Details (if applicable) */}
       {selectedEvent === 'bulk-order' && (
         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Bulk Order Details</h3>
@@ -188,7 +200,7 @@ export default function DemandInputPage() {
         <div className="bg-white rounded-lg shadow-sm p-6 border border-blue-200 bg-blue-50">
           <p className="text-sm text-blue-700">Final Expected Demand</p>
           <p className="text-3xl font-semibold text-blue-900 mt-1">{adjustedDemand}</p>
-          <p className="text-xs text-blue-600 mt-1">total orders</p>
+          <p className="text-xs text-blue-600 mt-1">total orders globally linked</p>
         </div>
       </div>
 
@@ -196,9 +208,7 @@ export default function DemandInputPage() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h4 className="font-semibold text-blue-900 mb-2">Demand Impact on Operations</h4>
         <p className="text-sm text-blue-800">
-          Expected demand of {adjustedDemand} orders will drive workload calculations, takt time targets,
-          and utilization rates across all workstations. The system will analyze capacity constraints
-          and recommend optimal staff assignments based on this demand profile.
+          Expected demand of {adjustedDemand} orders will automatically flow into the Takt Time Analysis page to calculate required production pace and workstation capacity constraints.
         </p>
       </div>
     </div>

@@ -1,72 +1,141 @@
-import { useState } from 'react';
-import { Play, User, Clock, ListChecks, ChevronRight, Info, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Play, User, Clock, ListChecks, ChevronRight, CheckCircle, Star, Edit2 } from 'lucide-react';
 import { Link } from 'react-router';
+import { useSkills } from '../components/SkillContext'; 
+import { useWorkstations } from '../components/WorkstationContext'; 
 
 interface Assignment {
   stationId: string;
+  stationName: string;
   worker: string;
   tasks: string[];
   cycleTime: number;
   utilization: number;
+  skillMatch?: number; 
 }
 
-const initialAssignments: Assignment[] = [
-  { stationId: 'ST-01', worker: 'Maria Santos', tasks: ['Assembly A', 'Assembly B'], cycleTime: 42, utilization: 85 },
-  { stationId: 'ST-02', worker: 'Juan Dela Cruz', tasks: ['Welding X', 'Welding Y'], cycleTime: 58, utilization: 92 },
-  { stationId: 'ST-03', worker: 'Ana Reyes', tasks: ['QC Check'], cycleTime: 28, utilization: 78 },
-  { stationId: 'ST-04', worker: 'Pedro Garcia', tasks: ['Sub-Assembly 1', 'Sub-Assembly 2', 'Sub-Assembly 3'], cycleTime: 65, utilization: 105 },
-  { stationId: 'ST-05', worker: 'Lisa Tan', tasks: ['Packaging'], cycleTime: 35, utilization: 88 },
-  { stationId: 'ST-06', worker: 'Carlos Wong', tasks: ['Final Check'], cycleTime: 25, utilization: 72 },
-];
-
 export default function StationAssignmentPage() {
-  const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments);
+  const { globalSkills } = useSkills(); 
+  const { workstations } = useWorkstations(); 
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [optimizing, setOptimizing] = useState(false);
+  const [isOptimized, setIsOptimized] = useState(false);
+
+  useEffect(() => {
+    if (!isOptimized && workstations) {
+      setAssignments(workstations.map(ws => ({
+        stationId: ws.id,
+        stationName: ws.stationName,
+        worker: 'Unassigned',
+        tasks: ws.tasks.map(t => t.taskName),
+        cycleTime: 0,
+        utilization: 0
+      })));
+    }
+  }, [workstations, isOptimized]);
 
   const handleOptimize = () => {
     setOptimizing(true);
     
-    // Simulate optimization
     setTimeout(() => {
-      const optimized = [...assignments];
-      // Move one task from ST-04 to ST-06
-      optimized[3] = {
-        ...optimized[3],
-        tasks: ['Sub-Assembly 1', 'Sub-Assembly 2'],
-        cycleTime: 50,
-        utilization: 85,
-      };
-      optimized[5] = {
-        ...optimized[5],
-        tasks: ['Final Check', 'Sub-Assembly 3'],
-        cycleTime: 40,
-        utilization: 88,
-      };
-      setAssignments(optimized);
+      let availableWorkers = [...globalSkills]; 
+      
+      const newAssignments = workstations.map(station => {
+        let bestWorkerIndex = 0;
+        let highestSkill = -1;
+
+        availableWorkers.forEach((worker, index) => {
+          const skillLevel = worker.skills[station.id] || 1;
+          if (skillLevel > highestSkill) {
+            highestSkill = skillLevel;
+            bestWorkerIndex = index;
+          }
+        });
+
+        const selectedWorker = availableWorkers[bestWorkerIndex];
+        
+        if (!selectedWorker) {
+          return {
+            stationId: station.id,
+            stationName: station.stationName,
+            worker: 'Unassigned',
+            tasks: station.tasks.map(t => t.taskName),
+            cycleTime: 0,
+            utilization: 0
+          };
+        }
+        
+        availableWorkers.splice(bestWorkerIndex, 1); 
+
+        const baseCycleTime = station.tasks.reduce((sum, task) => sum + task.avgTime, 0);
+        const skillBonus = highestSkill * (baseCycleTime * 0.10); 
+        
+        return {
+          stationId: station.id,
+          stationName: station.stationName,
+          worker: selectedWorker.worker,
+          skillMatch: highestSkill,
+          tasks: station.tasks.map(t => t.taskName),
+          cycleTime: Math.max(1, Math.round(baseCycleTime - skillBonus)), 
+          utilization: Math.floor(75 + (Math.random() * 20)), 
+        };
+      });
+
+      setAssignments(newAssignments);
+      setIsOptimized(true);
       setOptimizing(false);
-    }, 1500);
+    }, 1500); 
   };
+
+  const handleManualOverride = (stationId: string, newWorkerName: string) => {
+    setAssignments(prevAssignments => prevAssignments.map(assignment => {
+      if (assignment.stationId !== stationId) return assignment;
+      if (newWorkerName === 'Unassigned') {
+        return { ...assignment, worker: 'Unassigned', skillMatch: undefined, cycleTime: 0, utilization: 0 };
+      }
+
+      const workerData = globalSkills.find(w => w.worker === newWorkerName);
+      const newSkillLevel = workerData?.skills[stationId] || 1;
+      const stationData = workstations.find(ws => ws.id === stationId);
+      const baseCycleTime = stationData?.tasks.reduce((sum, task) => sum + task.avgTime, 0) || 50;
+      const skillBonus = newSkillLevel * (baseCycleTime * 0.10);
+
+      return {
+        ...assignment,
+        worker: newWorkerName,
+        skillMatch: newSkillLevel,
+        cycleTime: Math.max(1, Math.round(baseCycleTime - skillBonus)),
+        utilization: newSkillLevel < 3 ? Math.floor(95 + (Math.random() * 15)) : Math.floor(70 + (Math.random() * 20)),
+      };
+    }));
+  };
+
+  useEffect(() => {
+    if (globalSkills.length > 0 && workstations.length > 0) {
+      handleOptimize();
+    }
+  }, [globalSkills, workstations]); 
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Station Assignment & Rebalancing</h2>
-          <p className="text-gray-600 mt-1">Optimized worker-to-station recommendations</p>
+          <h2 className="text-2xl font-semibold text-gray-900">Station Assignment</h2>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Skill-based automated distribution</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <button
             onClick={handleOptimize}
-            disabled={optimizing}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+            disabled={optimizing || isOptimized}
+            className={`flex items-center justify-center gap-2 px-6 py-3 text-white rounded-lg transition-colors shadow-sm w-full sm:w-auto
+              ${optimizing || isOptimized ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
           >
             <Play className="w-5 h-5" />
-            {optimizing ? 'Optimizing...' : 'Run Optimization'}
+            {optimizing ? 'Calculating Best Fits...' : 'Auto-Assign Workers'}
           </button>
           <Link
             to="/performance"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors w-full sm:w-auto"
           >
             View Reports
             <ChevronRight className="w-4 h-4" />
@@ -74,161 +143,110 @@ export default function StationAssignmentPage() {
         </div>
       </div>
 
-      {/* Computation Logic Explanation */}
-      <div className="bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
-        <div className="flex items-start gap-3">
-          <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <h4 className="font-semibold text-green-900 mb-2">How the System Reached This Solution</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-800">
-              <div>
-                <div className="font-medium mb-1">Input Data</div>
-                <ul className="space-y-1 text-xs">
-                  <li>• 6 workers present today</li>
-                  <li>• 8 active menu items</li>
-                  <li>• 220 expected orders</li>
-                  <li>• Peak day multiplier (1.5x)</li>
-                </ul>
-              </div>
-              <div>
-                <div className="font-medium mb-1">Analysis Applied</div>
-                <ul className="space-y-1 text-xs">
-                  <li>• Skill matrix compatibility</li>
-                  <li>• Takt time targets (45s)</li>
-                  <li>• Utilization balancing</li>
-                  <li>• Bottleneck mitigation</li>
-                </ul>
-              </div>
-              <div>
-                <div className="font-medium mb-1">Optimization Goal</div>
-                <ul className="space-y-1 text-xs">
-                  <li>• Minimize cycle time variance</li>
-                  <li>• Balance utilization (80-95%)</li>
-                  <li>• Match skills to tasks</li>
-                  <li>• Eliminate bottlenecks</li>
-                </ul>
-              </div>
+      <div className="bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start gap-3">
+          <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5 hidden sm:block" />
+          <div className="flex-1 w-full">
+            <div className="flex items-center gap-2 mb-2 sm:mb-0">
+               <CheckCircle className="w-5 h-5 text-green-600 sm:hidden" />
+               <h4 className="font-semibold text-green-900">Dynamic Task Optimization Engine</h4>
             </div>
+            <p className="text-sm text-green-800 mb-4">
+              The algorithm automatically finds the highest-skilled worker to minimize cycle time. <strong>Managers can click any assigned worker's name to manually override the assignment.</strong>
+            </p>
           </div>
         </div>
       </div>
 
-      {optimizing && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm text-blue-700">
-              Analyzing workload distribution and skill compatibility...
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {assignments.map((assignment) => (
           <div
             key={assignment.stationId}
             className={`
-              bg-white rounded-lg shadow-sm p-6 border-2 transition-all
+              bg-white rounded-lg shadow-sm p-4 sm:p-6 border-2 transition-all hover:shadow-md
               ${assignment.utilization > 100 ? 'border-red-300 bg-red-50' : 
                 assignment.utilization > 90 ? 'border-yellow-300 bg-yellow-50' : 
-                'border-gray-200'}
+                assignment.worker !== 'Unassigned' ? 'border-blue-200 bg-white' : 'border-gray-200'}
             `}
           >
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{assignment.stationId}</h3>
-                <p className="text-sm text-gray-600">Workstation</p>
+                <h3 className="text-lg font-semibold text-gray-900">{assignment.stationName}</h3>
+                <p className="text-sm text-gray-600">{assignment.stationId}</p>
               </div>
               <div className={`
-                px-3 py-1 rounded-full text-xs font-semibold
+                px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap
                 ${assignment.utilization > 100 ? 'bg-red-100 text-red-700' : 
                   assignment.utilization > 90 ? 'bg-yellow-100 text-yellow-700' : 
-                  'bg-green-100 text-green-700'}
+                  assignment.utilization === 0 ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-700'}
               `}>
-                {assignment.utilization}%
+                {assignment.utilization === 0 ? 'Pending' : `${assignment.utilization}% Util`}
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <User className="w-5 h-5 text-gray-600" />
-                <div>
-                  <div className="text-xs text-gray-600">Assigned Worker</div>
-                  <div className="text-sm font-medium text-gray-900">{assignment.worker}</div>
+            <div className="space-y-3 sm:space-y-4">
+              <div className={`flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-blue-300 transition-colors ${assignment.worker === 'Unassigned' ? 'bg-gray-100' : 'bg-blue-50'}`}>
+                <User className={`w-5 h-5 flex-shrink-0 ${assignment.worker === 'Unassigned' ? 'text-gray-400' : 'text-blue-600'}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-gray-600 mb-0.5 flex items-center gap-1">
+                    Assigned Worker <Edit2 className="w-3 h-3 opacity-50" />
+                  </div>
+                  
+                  <select
+                    value={assignment.worker}
+                    onChange={(e) => handleManualOverride(assignment.stationId, e.target.value)}
+                    className={`w-full bg-transparent text-sm font-bold truncate focus:outline-none cursor-pointer appearance-none
+                      ${assignment.worker === 'Unassigned' ? 'text-gray-400' : 'text-blue-900'}
+                    `}
+                  >
+                    <option value="Unassigned">Select Worker...</option>
+                    {globalSkills.map((worker) => (
+                      <option key={worker.worker} value={worker.worker}>
+                        {worker.worker}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                {assignment.skillMatch && (
+                  <div className={`flex items-center bg-white px-2 py-1 rounded border flex-shrink-0 ${assignment.skillMatch < 3 ? 'border-red-200 text-red-700' : 'border-blue-100 text-gray-700'}`}>
+                    <Star className={`w-3 h-3 mr-1 ${assignment.skillMatch < 3 ? 'text-red-500 fill-red-500' : 'text-yellow-500 fill-yellow-500'}`} />
+                    <span className="text-xs font-bold">Lvl {assignment.skillMatch}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <Clock className="w-5 h-5 text-gray-600" />
+                <Clock className="w-5 h-5 text-gray-600 flex-shrink-0" />
                 <div>
-                  <div className="text-xs text-gray-600">Cycle Time</div>
-                  <div className="text-sm font-medium text-gray-900">{assignment.cycleTime}s</div>
+                  <div className="text-xs text-gray-600">Predicted Cycle Time</div>
+                  <div className={`text-sm font-medium ${assignment.skillMatch && assignment.skillMatch < 3 ? 'text-red-600' : 'text-gray-900'}`}>
+                    {assignment.cycleTime === 0 ? '--' : `${assignment.cycleTime} min`}
+                  </div>
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <ListChecks className="w-5 h-5 text-gray-600" />
-                  <div className="text-xs text-gray-600">Assigned Tasks</div>
+                  <div className="text-xs text-gray-600">Live Station Tasks</div>
                 </div>
-                <div className="space-y-1 ml-7">
-                  {assignment.tasks.map((task, index) => (
-                    <div
+                <div className="flex flex-wrap gap-2 ml-7">
+                  {assignment.tasks.length > 0 ? assignment.tasks.map((task, index) => (
+                    <span
                       key={index}
-                      className="text-sm text-gray-700 px-3 py-1.5 bg-white border border-gray-200 rounded"
+                      className="text-xs sm:text-sm text-gray-700 px-2 py-1 bg-white border border-gray-200 rounded shadow-sm"
                     >
                       {task}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200">
-                <div className="text-xs text-gray-600 mb-2">Utilization</div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className={`h-3 rounded-full transition-all duration-500 ${
-                      assignment.utilization > 100 ? 'bg-red-500' :
-                      assignment.utilization > 90 ? 'bg-yellow-500' :
-                      'bg-green-500'
-                    }`}
-                    style={{ width: `${Math.min(assignment.utilization, 100)}%` }}
-                  />
+                    </span>
+                  )) : (
+                    <span className="text-xs text-red-500 italic">No tasks configured</span>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Summary */}
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Assignment Summary</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <div className="text-sm text-gray-600 mb-1">Total Stations</div>
-            <div className="text-2xl font-semibold text-gray-900">{assignments.length}</div>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <div className="text-sm text-gray-600 mb-1">Avg Utilization</div>
-            <div className="text-2xl font-semibold text-gray-900">
-              {(assignments.reduce((acc, a) => acc + a.utilization, 0) / assignments.length).toFixed(0)}%
-            </div>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <div className="text-sm text-gray-600 mb-1">Bottlenecks</div>
-            <div className="text-2xl font-semibold text-red-600">
-              {assignments.filter(a => a.utilization > 100).length}
-            </div>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <div className="text-sm text-gray-600 mb-1">Avg Cycle Time</div>
-            <div className="text-2xl font-semibold text-gray-900">
-              {(assignments.reduce((acc, a) => acc + a.cycleTime, 0) / assignments.length).toFixed(0)}s
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

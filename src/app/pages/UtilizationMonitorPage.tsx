@@ -1,24 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, Clock, Activity, ChevronRight, Info } from 'lucide-react';
 import { Link } from 'react-router';
 import { useWorkforce } from '../components/WorkforceState';
+import { useNotification } from '../components/NotificationsContext';
 
 export default function UtilizationMonitorPage() {
   const [hoveredWorker, setHoveredWorker] = useState<string | null>(null);
   
-  // Pull live data from global context
   const { workers } = useWorkforce();
+  const { addNotification } = useNotification(); 
   
-  // Filter out absent/day-off workers
   const activeWorkers = workers.filter(w => w.status === 'present');
 
-  // Calculate dynamic utilization data for active workers
   const workersWithUtilization = activeWorkers.map(w => ({
     ...w,
     utilizationPercent: w.shiftDurationMinutes > 0 
       ? Math.round((w.workTimeMinutes / w.shiftDurationMinutes) * 100) 
       : 0
   }));
+
+  // ALERT SYSTEM
+  useEffect(() => {
+    if (workersWithUtilization.length > 0) {
+      workersWithUtilization.forEach(worker => {
+        if (worker.utilizationPercent > 90) {
+          addNotification(
+            'warning',
+            `Over-utilization Warning: ${worker.name} is operating at ${worker.utilizationPercent}%. Consider reassigning to prevent fatigue.`
+          );
+        }
+      });
+    }
+  }, [workers]);
 
   // Aggregate Metrics
   const avgUtilization = workersWithUtilization.length > 0
@@ -28,10 +41,10 @@ export default function UtilizationMonitorPage() {
   const totalIdleTime = workersWithUtilization.reduce((acc, w) => acc + w.idleTimeMinutes, 0);
 
   const getUtilizationColor = (utilization: number) => {
-    if (utilization >= 90) return 'bg-red-500';   // Overworked / Fatigue risk
-    if (utilization >= 75) return 'bg-green-500'; // Optimal
-    if (utilization >= 60) return 'bg-yellow-500'; // Underutilized
-    return 'bg-blue-500'; // Highly idle
+    if (utilization >= 90) return 'bg-red-500';
+    if (utilization >= 75) return 'bg-green-500';
+    if (utilization >= 60) return 'bg-yellow-500';
+    return 'bg-blue-500';
   };
 
   return (
@@ -65,7 +78,7 @@ export default function UtilizationMonitorPage() {
             <p className="text-sm text-blue-800">
               Worker utilization measures how effectively each worker's time is being used based on the logs from the Availability page.
               Optimal range is 75-90%. Lower utilization indicates idle time that could be reassigned.
-              Higher utilization (above 90%) may lead to worker fatigue and reduced quality.
+              Higher utilization (above 90%) may lead to worker fatigue and reduced quality. Alerts will be sent to the notification bell if fatigue risks are detected.
             </p>
           </div>
         </div>

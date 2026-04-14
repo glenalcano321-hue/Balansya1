@@ -8,95 +8,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
-import { useWorkforce } from '../components/WorkforceState'; // <-- 1. Import the global workforce state
-
-interface Task {
-  id: string;
-  taskName: string;
-  avgTime: number;
-  skillRequired: string;
-  complexity: 'Low' | 'Medium' | 'High';
-}
-
-interface Workstation {
-  id: string;
-  stationName: string;
-  stationType: string;
-  tasks: Task[];
-  capacity: number;
-  notes: string;
-}
-
-// 2. Changed IDs to ST-XX to match the WorkforceState data
-const initialWorkstations: Workstation[] = [
-  {
-    id: 'ST-01',
-    stationName: 'Order Taking',
-    stationType: 'Front of House',
-    capacity: 2,
-    notes: 'Handles customer orders and initial interaction',
-    tasks: [
-      { id: 'T001', taskName: 'Take order', avgTime: 3, skillRequired: 'Customer Service', complexity: 'Low' },
-      { id: 'T002', taskName: 'Enter into system', avgTime: 2, skillRequired: 'System Operation', complexity: 'Low' }
-    ]
-  },
-  {
-    id: 'ST-02',
-    stationName: 'Ingredient Preparation',
-    stationType: 'Back of House',
-    capacity: 3,
-    notes: 'Prep work for all menu items',
-    tasks: [
-      { id: 'T003', taskName: 'Wash vegetables', avgTime: 5, skillRequired: 'Basic Prep', complexity: 'Low' },
-      { id: 'T004', taskName: 'Cut ingredients', avgTime: 8, skillRequired: 'Knife Skills', complexity: 'Medium' },
-      { id: 'T005', taskName: 'Measure portions', avgTime: 3, skillRequired: 'Precision', complexity: 'Low' }
-    ]
-  },
-  {
-    id: 'ST-03',
-    stationName: 'Cooking Station',
-    stationType: 'Back of House',
-    capacity: 4,
-    notes: 'Main cooking and heat preparation',
-    tasks: [
-      { id: 'T006', taskName: 'Grill proteins', avgTime: 12, skillRequired: 'Grilling', complexity: 'Medium' },
-      { id: 'T007', taskName: 'Sauté vegetables', avgTime: 8, skillRequired: 'Cooking', complexity: 'Medium' },
-      { id: 'T008', taskName: 'Deep fry', avgTime: 10, skillRequired: 'Frying', complexity: 'High' }
-    ]
-  },
-  {
-    id: 'ST-04',
-    stationName: 'Plating Station',
-    stationType: 'Back of House',
-    capacity: 2,
-    notes: 'Final presentation and quality check',
-    tasks: [
-      { id: 'T009', taskName: 'Plate dish', avgTime: 4, skillRequired: 'Plating', complexity: 'Medium' },
-      { id: 'T010', taskName: 'Add garnish', avgTime: 2, skillRequired: 'Presentation', complexity: 'Low' },
-      { id: 'T011', taskName: 'Quality check', avgTime: 1, skillRequired: 'Attention to Detail', complexity: 'Low' }
-    ]
-  },
-  {
-    id: 'ST-05',
-    stationName: 'Serving Station',
-    stationType: 'Front of House',
-    capacity: 3,
-    notes: 'Deliver food to customers',
-    tasks: [
-      { id: 'T012', taskName: 'Deliver order', avgTime: 4, skillRequired: 'Customer Service', complexity: 'Low' },
-      { id: 'T013', taskName: 'Check satisfaction', avgTime: 2, skillRequired: 'Communication', complexity: 'Low' }
-    ]
-  }
-];
+import { useWorkforce } from '../components/WorkforceState';
+import { useWorkstations, Workstation, Task } from '../components/WorkstationContext';
 
 export default function WorkstationSetupPage() {
-  const [workstations, setWorkstations] = useState<Workstation[]>(initialWorkstations);
+  const { workstations, setWorkstations } = useWorkstations(); 
+  
   const [editingStation, setEditingStation] = useState<Workstation | null>(null);
   const [editingTask, setEditingTask] = useState<{ stationId: string; task: Task | null }>({ stationId: '', task: null });
   const [isStationDialogOpen, setIsStationDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
 
-  // 3. Pull live workers from global context
   const { workers } = useWorkforce();
 
   const handleAddStation = () => {
@@ -262,16 +184,12 @@ export default function WorkstationSetupPage() {
       {/* Workstations Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {workstations.map((station) => {
-          // Lean Metric: Calculate total cycle time for the station
           const totalStationTime = station.tasks.reduce((sum, task) => sum + task.avgTime, 0);
-          
-          // 4. Find all present workers assigned to this station
           const assignedWorkers = workers.filter(w => w.station === station.id && w.status === 'present');
           const isOverCapacity = assignedWorkers.length > station.capacity;
 
           return (
             <div key={station.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col transition-all hover:shadow-md">
-              {/* Station Header */}
               <div className="p-5 border-b border-gray-100 bg-gray-50/50">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
@@ -302,7 +220,6 @@ export default function WorkstationSetupPage() {
                   <p className="text-sm text-gray-500 mt-3 bg-white p-2.5 rounded border border-gray-100 italic">"{station.notes}"</p>
                 )}
 
-                {/* 5. UI Integration: Show Active Staff */}
                 <div className="mt-4 pt-4 border-t border-gray-200/60">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -320,7 +237,6 @@ export default function WorkstationSetupPage() {
                     )}
                   </div>
                   
-                  {/* Capacity Warning Alert */}
                   {isOverCapacity && (
                     <div className="mt-2 flex items-center gap-1.5 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100">
                       <AlertCircle className="w-4 h-4" />
@@ -331,7 +247,6 @@ export default function WorkstationSetupPage() {
 
               </div>
 
-              {/* Station Tasks */}
               <div className="p-5 flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
@@ -376,7 +291,6 @@ export default function WorkstationSetupPage() {
                             </div>
                           </div>
                           
-                          {/* Hover Actions */}
                           <div className="flex opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm p-1 rounded-md shadow-sm border absolute right-2 top-1/2 -translate-y-1/2">
                             <Button
                               variant="ghost"
@@ -412,9 +326,6 @@ export default function WorkstationSetupPage() {
         })}
       </div>
 
-      {/* --- MODALS --- */}
-
-      {/* Station Dialog */}
       <Dialog open={isStationDialogOpen} onOpenChange={setIsStationDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -484,7 +395,6 @@ export default function WorkstationSetupPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Task Dialog */}
       <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
