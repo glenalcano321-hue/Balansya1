@@ -16,9 +16,9 @@ export default function ComponentLibrary({ onAddStation, placedStationIds }: Com
   };
 
   const getColor = (type: string) => {
-    if (type.includes('Back')) return '#EF4444'; // Red
-    if (type.includes('Front')) return '#3B82F6'; // Blue
-    return '#8B5CF6'; // Purple
+    if (type.includes('Back')) return '#EF4444';
+    if (type.includes('Front')) return '#3B82F6';
+    return '#8B5CF6';
   };
 
   return (

@@ -67,7 +67,6 @@ export default function KitchenLayoutEditorPage() {
     }
   };
 
-  // Maps existing Global Workstations to the canvas on load
   useEffect(() => {
     if (workstations.length > 0 && stations.length === 0) {
       const mappedStations: StationItem[] = workstations.map((ws, index) => ({
@@ -86,10 +85,8 @@ export default function KitchenLayoutEditorPage() {
       }));
       setStations(mappedStations);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workstations]); 
 
-  // CHANGED: Now accepts the exact global station object from the sidebar
+  }, [workstations]); 
   const handleAddStation = (globalWs: any) => {
     const newStation: StationItem = {
       id: globalWs.id,
@@ -123,7 +120,7 @@ export default function KitchenLayoutEditorPage() {
     if (selectedStation) {
       const newStation = {
         ...selectedStation,
-        id: `ST-${Math.random().toString(36).substr(2, 4).toUpperCase()}`, // Duplicates get a new ID so they don't break the global link
+        id: `ST-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
         x: selectedStation.x + 20,
         y: selectedStation.y + 20,
       };
@@ -132,9 +129,7 @@ export default function KitchenLayoutEditorPage() {
     }
   };
 
-  // CHANGED: Safer save logic that preserves unplaced stations
   const handleSave = () => {
-    // 1. Find duplicated stations that aren't in the global DB yet and add them
     const newStationsToPush = stations
       .filter(s => !workstations.find(w => w.id === s.id))
       .map(localWs => ({
@@ -146,13 +141,12 @@ export default function KitchenLayoutEditorPage() {
         tasks: [] 
       }));
 
-    // 2. Update names of existing ones, but leave unplaced ones alone!
     const updatedGlobal = workstations.map(globalWs => {
       const localWs = stations.find(s => s.id === globalWs.id);
       if (localWs) {
         return { ...globalWs, stationName: localWs.name };
       }
-      return globalWs; // Preserves unplaced stations
+      return globalWs;
     });
 
     setWorkstations([...updatedGlobal, ...newStationsToPush]);
@@ -162,7 +156,6 @@ export default function KitchenLayoutEditorPage() {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="h-[calc(100vh-4rem)] flex flex-col bg-gray-50">
-        {/* Top Toolbar */}
         <div className="bg-white border-b border-gray-200 px-6 py-3 shadow-sm z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -229,7 +222,6 @@ export default function KitchenLayoutEditorPage() {
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* CHANGED: Passing placed station IDs so the sidebar can grey them out! */}
           <ComponentLibrary 
             onAddStation={handleAddStation} 
             placedStationIds={stations.map(s => s.id)} 

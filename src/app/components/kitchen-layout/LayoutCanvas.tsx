@@ -23,7 +23,6 @@ export default function LayoutCanvas({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent, station: StationItem) => {
-    // Only allow dragging stations if we are using the select or move tools
     if (tool === 'select' || tool === 'move') {
       e.stopPropagation();
       onSelectStation(station);
@@ -62,7 +61,6 @@ export default function LayoutCanvas({
   };
 
   return (
-    // A massive 4000x4000 wrapper so you never run out of panning space
     <div className="absolute top-0 left-0 w-[4000px] h-[4000px] bg-white overflow-hidden shadow-inner">
       <div
         ref={canvasRef}
@@ -70,7 +68,6 @@ export default function LayoutCanvas({
         style={{
           transform: `scale(${zoom / 100})`,
           transformOrigin: '0 0',
-          // Seamless CSS Grid Background
           backgroundImage: `
             linear-gradient(to right, #e5e7eb 1px, transparent 1px),
             linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)
@@ -185,7 +182,6 @@ export default function LayoutCanvas({
           );
         })}
 
-        {/* Info overlay when no stations */}
         {stations.length === 0 && (
           <div className="absolute top-[200px] left-0 right-0 flex items-center justify-center pointer-events-none">
             <div className="text-center text-gray-400 bg-white/80 p-6 rounded-2xl backdrop-blur-sm border border-gray-100">

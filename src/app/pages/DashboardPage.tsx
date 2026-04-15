@@ -2,41 +2,26 @@ import { useMemo } from 'react';
 import { Clock, Users, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, ChevronRight, Play, UserCheck, UtensilsCrossed, Activity } from 'lucide-react';
 import { Link } from 'react-router';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-// Import Global Contexts
 import { useWorkforce } from '../components/WorkforceState';
 import { useDemand } from '../components/DemandContext';
 import { useWorkstations } from '../components/WorkstationContext';
 
 export default function DashboardPage() {
-  // Pull live data
   const { workers } = useWorkforce();
   const { demandData } = useDemand();
   const { workstations } = useWorkstations();
-
-  // --- Dynamic Calculations ---
-
-  // 1. Workforce Metrics
   const activeWorkers = workers.filter(w => w.status === 'present');
   const absentWorkers = workers.filter(w => w.status === 'absent').length;
-  
-  // 2. Demand Metrics
   const liveDemand = demandData.adjustedDemand;
-  
-  // 3. Takt Time Calculation (Assuming an 8-hour / 28,800 sec production day for the dashboard summary)
   const productionSeconds = 28800; 
   const taktTime = liveDemand > 0 ? (productionSeconds / liveDemand).toFixed(1) : '0';
-
-  // 4. Global Utilization
   const totalWorkTime = activeWorkers.reduce((acc, w) => acc + w.workTimeMinutes, 0);
   const totalShiftTime = activeWorkers.reduce((acc, w) => acc + w.shiftDurationMinutes, 0);
   const globalUtilization = totalShiftTime > 0 ? Math.round((totalWorkTime / totalShiftTime) * 100) : 0;
 
-  // 5. Generate Chart Data
   const workloadData = useMemo(() => {
     return workstations.map(ws => {
       const cycleTime = ws.tasks.reduce((sum, t) => sum + t.avgTime, 0);
-      // Rough workload estimation for the chart based on demand and cycle time
       const estimatedWorkload = Math.min(100, Math.round((liveDemand * (cycleTime / 60)) / (8 * ws.capacity)));
       return {
         station: ws.id,
@@ -55,14 +40,12 @@ export default function DashboardPage() {
         utilization: util,
         idle: Math.max(0, 100 - util)
       };
-    }).slice(0, 4); // Show top 4 on dashboard
+    }).slice(0, 4);
   }, [activeWorkers]);
 
-  // 6. Dynamic Alerts
   const liveAlerts = useMemo(() => {
     const generatedAlerts = [];
     
-    // Check for overworked staff
     activeWorkers.forEach(w => {
       const util = w.shiftDurationMinutes > 0 ? Math.round((w.workTimeMinutes / w.shiftDurationMinutes) * 100) : 0;
       if (util > 90) {
@@ -73,7 +56,6 @@ export default function DashboardPage() {
       }
     });
 
-    // Check for bottlenecks (workload > 95)
     workloadData.forEach(ws => {
       if (ws.workload > 95) {
         generatedAlerts.push({
@@ -93,7 +75,6 @@ export default function DashboardPage() {
 
   const kpiData = [
     { label: 'Available Workers Today', value: activeWorkers.length.toString(), subtext: `${absentWorkers} absent`, icon: UserCheck, status: 'info' },
-    // Active Dishes relies on a Menu Context we haven't built yet, so we'll leave it static for now, or you can build a MenuContext next!
     { label: 'Active Dishes', value: '24', subtext: '8 categories', icon: UtensilsCrossed, status: 'info' }, 
     { label: 'Expected Demand', value: liveDemand.toString(), subtext: 'orders today', icon: TrendingUp, status: 'info' },
     { label: 'Avg Service Time', value: '12m', subtext: 'per order', icon: Clock, status: 'info' },
@@ -105,7 +86,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Quick Start */}
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Operations Dashboard</h2>
