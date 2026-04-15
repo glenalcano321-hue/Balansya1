@@ -3,6 +3,7 @@ import { Play, User, Clock, ListChecks, ChevronRight, CheckCircle, Star, Edit2 }
 import { Link } from 'react-router';
 import { useSkills } from '../components/SkillContext'; 
 import { useWorkstations } from '../components/WorkstationContext'; 
+import { useWorkforce } from '../components/WorkforceState'; // <-- 1. Import the global workforce!
 
 interface Assignment {
   stationId: string;
@@ -17,23 +18,33 @@ interface Assignment {
 export default function StationAssignmentPage() {
   const { globalSkills } = useSkills(); 
   const { workstations } = useWorkstations(); 
+  const { workers, setWorkers } = useWorkforce(); // <-- 2. Pull in the live workers database
+  
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [optimizing, setOptimizing] = useState(false);
   const [isOptimized, setIsOptimized] = useState(false);
 
+  // Initialize the UI with the live workstations
   useEffect(() => {
     if (!isOptimized && workstations) {
-      setAssignments(workstations.map(ws => ({
-        stationId: ws.id,
-        stationName: ws.stationName,
-        worker: 'Unassigned',
-        tasks: ws.tasks.map(t => t.taskName),
-        cycleTime: 0,
-        utilization: 0
-      })));
+      setAssignments(workstations.map(ws => {
+        // Look to see if someone is ALREADY assigned in the global database
+        const existingWorker = workers.find(w => w.station === ws.id);
+        
+        return {
+          stationId: ws.id,
+          stationName: ws.stationName,
+          worker: existingWorker ? existingWorker.name : 'Unassigned',
+          tasks: ws.tasks.map(t => t.taskName),
+          cycleTime: 0,
+          utilization: 0,
+          skillMatch: existingWorker ? globalSkills.find(s => s.worker === existingWorker.name)?.skills[ws.id] : undefined
+        };
+      }));
     }
-  }, [workstations, isOptimized]);
+  }, [workstations, isOptimized, workers, globalSkills]);
 
+  // 1. THE AUTO-ASSIGN ALGORITHM
   const handleOptimize = () => {
     setOptimizing(true);
     
@@ -81,21 +92,35 @@ export default function StationAssignmentPage() {
         };
       });
 
+      // 3. PUSH TO GLOBAL DATABASE: Update the workers array so the Layout Editor can see it!
+      const updatedWorkers = workers.map(w => {
+        const matchingAssignment = newAssignments.find(a => a.worker === w.name);
+        if (matchingAssignment) {
+          return { ...w, station: matchingAssignment.stationId };
+        }
+        return { ...w, station: 'Unassigned' };
+      });
+      
+      setWorkers(updatedWorkers);
       setAssignments(newAssignments);
       setIsOptimized(true);
       setOptimizing(false);
     }, 1500); 
   };
 
+  // 2. THE MANUAL OVERRIDE LOGIC
   const handleManualOverride = (stationId: string, newWorkerName: string) => {
+    // A. Update local UI state
     setAssignments(prevAssignments => prevAssignments.map(assignment => {
       if (assignment.stationId !== stationId) return assignment;
+
       if (newWorkerName === 'Unassigned') {
         return { ...assignment, worker: 'Unassigned', skillMatch: undefined, cycleTime: 0, utilization: 0 };
       }
 
       const workerData = globalSkills.find(w => w.worker === newWorkerName);
-      const newSkillLevel = workerData?.skills[stationId] || 1;
+      const newSkillLevel = workerData?.skills[stationId] || 1; 
+
       const stationData = workstations.find(ws => ws.id === stationId);
       const baseCycleTime = stationData?.tasks.reduce((sum, task) => sum + task.avgTime, 0) || 50;
       const skillBonus = newSkillLevel * (baseCycleTime * 0.10);
@@ -108,16 +133,24 @@ export default function StationAssignmentPage() {
         utilization: newSkillLevel < 3 ? Math.floor(95 + (Math.random() * 15)) : Math.floor(70 + (Math.random() * 20)),
       };
     }));
-  };
 
-  useEffect(() => {
-    if (globalSkills.length > 0 && workstations.length > 0) {
-      handleOptimize();
-    }
-  }, [globalSkills, workstations]); 
+    // B. Push the manual override to the global database!
+    const updatedWorkers = workers.map(w => {
+      if (w.name === newWorkerName) {
+        return { ...w, station: stationId }; // Assign new worker
+      }
+      if (w.station === stationId && w.name !== newWorkerName) {
+        return { ...w, station: 'Unassigned' }; // Evict the old worker from this station
+      }
+      return w;
+    });
+    
+    setWorkers(updatedWorkers);
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Station Assignment</h2>
@@ -143,6 +176,7 @@ export default function StationAssignmentPage() {
         </div>
       </div>
 
+      {/* Info Box */}
       <div className="bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start gap-3">
           <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5 hidden sm:block" />
@@ -152,12 +186,13 @@ export default function StationAssignmentPage() {
                <h4 className="font-semibold text-green-900">Dynamic Task Optimization Engine</h4>
             </div>
             <p className="text-sm text-green-800 mb-4">
-              The algorithm automatically finds the highest-skilled worker to minimize cycle time. <strong>Managers can click any assigned worker's name to manually override the assignment.</strong>
+              The algorithm automatically finds the highest-skilled worker to minimize cycle time. <strong>Managers can click any assigned worker's name to manually override the assignment. Changes made here automatically update the Kitchen Layout Editor.</strong>
             </p>
           </div>
         </div>
       </div>
 
+      {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {assignments.map((assignment) => (
           <div
@@ -185,6 +220,7 @@ export default function StationAssignmentPage() {
             </div>
 
             <div className="space-y-3 sm:space-y-4">
+              {/* THE MANUAL DROPDOWN UI */}
               <div className={`flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-blue-300 transition-colors ${assignment.worker === 'Unassigned' ? 'bg-gray-100' : 'bg-blue-50'}`}>
                 <User className={`w-5 h-5 flex-shrink-0 ${assignment.worker === 'Unassigned' ? 'text-gray-400' : 'text-blue-600'}`} />
                 <div className="flex-1 min-w-0">
@@ -192,6 +228,7 @@ export default function StationAssignmentPage() {
                     Assigned Worker <Edit2 className="w-3 h-3 opacity-50" />
                   </div>
                   
+                  {/* Select Dropdown to override worker */}
                   <select
                     value={assignment.worker}
                     onChange={(e) => handleManualOverride(assignment.stationId, e.target.value)}

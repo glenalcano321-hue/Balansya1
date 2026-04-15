@@ -1,41 +1,108 @@
-import { Clock, Users, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, ChevronRight, Play, UserCheck, UserX, UtensilsCrossed, Activity } from 'lucide-react';
+import { useMemo } from 'react';
+import { Clock, Users, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, ChevronRight, Play, UserCheck, UtensilsCrossed, Activity } from 'lucide-react';
 import { Link } from 'react-router';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const kpiData = [
-  { label: 'Available Workers Today', value: '12', subtext: '3 absent', icon: UserCheck, status: 'info' },
-  { label: 'Active Dishes', value: '24', subtext: '8 categories', icon: UtensilsCrossed, status: 'info' },
-  { label: 'Expected Demand', value: '180', subtext: 'orders today', icon: TrendingUp, status: 'info' },
-  { label: 'Avg Service Time', value: '12m', subtext: 'per order', icon: Clock, status: 'info' },
-  { label: 'Takt Time', value: '45s', change: -5, status: 'good', icon: Clock },
-  { label: 'Workforce Utilization', value: '87%', change: 3, status: 'good', icon: Activity },
-  { label: 'Line Efficiency', value: '92%', change: 2, status: 'good', icon: TrendingUp },
-  { label: 'Bottleneck Alert', value: '3', subtext: 'stations', icon: AlertTriangle, status: 'warning' },
-];
-
-const workloadData = [
-  { station: 'ST-01', workload: 85, capacity: 100 },
-  { station: 'ST-02', workload: 92, capacity: 100 },
-  { station: 'ST-03', workload: 78, capacity: 100 },
-  { station: 'ST-04', workload: 105, capacity: 100 },
-  { station: 'ST-05', workload: 88, capacity: 100 },
-  { station: 'ST-06', workload: 95, capacity: 100 },
-];
-
-const utilizationData = [
-  { name: 'Maria Santos', station: 'ST-01', utilization: 85, idle: 15 },
-  { name: 'Juan Dela Cruz', station: 'ST-02', utilization: 92, idle: 8 },
-  { name: 'Ana Reyes', station: 'ST-03', utilization: 78, idle: 22 },
-  { name: 'Pedro Garcia', station: 'ST-04', utilization: 88, idle: 12 },
-];
-
-const alerts = [
-  { type: 'critical', message: 'Station ST-04 operating at 105% capacity - immediate rebalancing required' },
-  { type: 'warning', message: 'Worker Ana Reyes showing 22% idle time - consider task redistribution' },
-  { type: 'info', message: 'Takt time improved by 5 seconds - current optimization effective' },
-];
+// Import Global Contexts
+import { useWorkforce } from '../components/WorkforceState';
+import { useDemand } from '../components/DemandContext';
+import { useWorkstations } from '../components/WorkstationContext';
 
 export default function DashboardPage() {
+  // Pull live data
+  const { workers } = useWorkforce();
+  const { demandData } = useDemand();
+  const { workstations } = useWorkstations();
+
+  // --- Dynamic Calculations ---
+
+  // 1. Workforce Metrics
+  const activeWorkers = workers.filter(w => w.status === 'present');
+  const absentWorkers = workers.filter(w => w.status === 'absent').length;
+  
+  // 2. Demand Metrics
+  const liveDemand = demandData.adjustedDemand;
+  
+  // 3. Takt Time Calculation (Assuming an 8-hour / 28,800 sec production day for the dashboard summary)
+  const productionSeconds = 28800; 
+  const taktTime = liveDemand > 0 ? (productionSeconds / liveDemand).toFixed(1) : '0';
+
+  // 4. Global Utilization
+  const totalWorkTime = activeWorkers.reduce((acc, w) => acc + w.workTimeMinutes, 0);
+  const totalShiftTime = activeWorkers.reduce((acc, w) => acc + w.shiftDurationMinutes, 0);
+  const globalUtilization = totalShiftTime > 0 ? Math.round((totalWorkTime / totalShiftTime) * 100) : 0;
+
+  // 5. Generate Chart Data
+  const workloadData = useMemo(() => {
+    return workstations.map(ws => {
+      const cycleTime = ws.tasks.reduce((sum, t) => sum + t.avgTime, 0);
+      // Rough workload estimation for the chart based on demand and cycle time
+      const estimatedWorkload = Math.min(100, Math.round((liveDemand * (cycleTime / 60)) / (8 * ws.capacity)));
+      return {
+        station: ws.id,
+        workload: estimatedWorkload,
+        capacity: 100
+      };
+    });
+  }, [workstations, liveDemand]);
+
+  const utilizationData = useMemo(() => {
+    return activeWorkers.map(w => {
+      const util = w.shiftDurationMinutes > 0 ? Math.round((w.workTimeMinutes / w.shiftDurationMinutes) * 100) : 0;
+      return {
+        name: w.name,
+        station: w.station !== 'Unassigned' ? w.station : 'Unassigned',
+        utilization: util,
+        idle: Math.max(0, 100 - util)
+      };
+    }).slice(0, 4); // Show top 4 on dashboard
+  }, [activeWorkers]);
+
+  // 6. Dynamic Alerts
+  const liveAlerts = useMemo(() => {
+    const generatedAlerts = [];
+    
+    // Check for overworked staff
+    activeWorkers.forEach(w => {
+      const util = w.shiftDurationMinutes > 0 ? Math.round((w.workTimeMinutes / w.shiftDurationMinutes) * 100) : 0;
+      if (util > 90) {
+        generatedAlerts.push({
+          type: 'warning',
+          message: `Worker ${w.name} showing ${util}% utilization - consider task redistribution`
+        });
+      }
+    });
+
+    // Check for bottlenecks (workload > 95)
+    workloadData.forEach(ws => {
+      if (ws.workload > 95) {
+        generatedAlerts.push({
+          type: 'critical',
+          message: `Station ${ws.station} operating near capacity - immediate rebalancing required`
+        });
+      }
+    });
+
+    if (generatedAlerts.length === 0) {
+       generatedAlerts.push({ type: 'info', message: 'All systems operating within normal parameters.' });
+    }
+
+    return generatedAlerts;
+  }, [activeWorkers, workloadData]);
+
+
+  const kpiData = [
+    { label: 'Available Workers Today', value: activeWorkers.length.toString(), subtext: `${absentWorkers} absent`, icon: UserCheck, status: 'info' },
+    // Active Dishes relies on a Menu Context we haven't built yet, so we'll leave it static for now, or you can build a MenuContext next!
+    { label: 'Active Dishes', value: '24', subtext: '8 categories', icon: UtensilsCrossed, status: 'info' }, 
+    { label: 'Expected Demand', value: liveDemand.toString(), subtext: 'orders today', icon: TrendingUp, status: 'info' },
+    { label: 'Avg Service Time', value: '12m', subtext: 'per order', icon: Clock, status: 'info' },
+    { label: 'Takt Time', value: `${taktTime}s`, status: 'good', icon: Clock },
+    { label: 'Workforce Utilization', value: `${globalUtilization}%`, status: globalUtilization > 90 ? 'warning' : 'good', icon: Activity },
+    { label: 'Line Efficiency', value: '92%', status: 'good', icon: TrendingUp },
+    { label: 'Bottleneck Alert', value: liveAlerts.filter(a => a.type === 'critical').length.toString(), subtext: 'stations', icon: AlertTriangle, status: liveAlerts.filter(a => a.type === 'critical').length > 0 ? 'warning' : 'good' },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header with Quick Start */}
@@ -57,10 +124,7 @@ export default function DashboardPage() {
       <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6">
         <h3 className="font-semibold text-blue-900 mb-4">Daily Operations Workflow</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Link
-            to="/workforce-availability"
-            className="bg-white p-4 rounded-lg hover:shadow-md transition-shadow group"
-          >
+          <Link to="/workforce-availability" className="bg-white p-4 rounded-lg hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-900">1. Workforce Setup</span>
               <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
@@ -68,10 +132,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-600">Set daily attendance</p>
           </Link>
 
-          <Link
-            to="/menu-input"
-            className="bg-white p-4 rounded-lg hover:shadow-md transition-shadow group"
-          >
+          <Link to="/menu-input" className="bg-white p-4 rounded-lg hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-900">2. Menu Input</span>
               <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
@@ -79,10 +140,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-600">Select active items</p>
           </Link>
 
-          <Link
-            to="/demand-input"
-            className="bg-white p-4 rounded-lg hover:shadow-md transition-shadow group"
-          >
+          <Link to="/demand-input" className="bg-white p-4 rounded-lg hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-900">3. Demand Input</span>
               <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
@@ -90,10 +148,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-600">Set expected orders</p>
           </Link>
 
-          <Link
-            to="/station-assignment"
-            className="bg-white p-4 rounded-lg hover:shadow-md transition-shadow group"
-          >
+          <Link to="/station-assignment" className="bg-white p-4 rounded-lg hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-900">4. View Results</span>
               <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
@@ -119,12 +174,6 @@ export default function DashboardPage() {
                     kpi.status === 'good' ? 'text-green-600' : 'text-blue-600'
                   }`} />
                 </div>
-                {kpi.change !== undefined && kpi.change !== 0 && (
-                  <div className={`flex items-center gap-1 text-sm ${kpi.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {kpi.change > 0 ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
-                    <span>{Math.abs(kpi.change)}%</span>
-                  </div>
-                )}
               </div>
               <div className="text-sm text-gray-600 mb-1">{kpi.label}</div>
               <div className="text-3xl font-semibold text-gray-900">{kpi.value}</div>
@@ -141,52 +190,64 @@ export default function DashboardPage() {
         {/* Workload Visualization */}
         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Station Workload Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={workloadData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" key="grid-workload" />
-              <XAxis dataKey="station" tick={{ fill: '#6B7280', fontSize: 12 }} key="xaxis-workload" />
-              <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} key="yaxis-workload" />
-              <Tooltip key="tooltip-workload" />
-              <Bar dataKey="workload" fill="#3B82F6" radius={[4, 4, 0, 0]} key="bar-workload" />
-              <Bar dataKey="capacity" fill="#E5E7EB" radius={[4, 4, 0, 0]} key="bar-capacity" />
-            </BarChart>
-          </ResponsiveContainer>
+          {workloadData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={workloadData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" key="grid-workload" />
+                <XAxis dataKey="station" tick={{ fill: '#6B7280', fontSize: 12 }} key="xaxis-workload" />
+                <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} key="yaxis-workload" />
+                <Tooltip key="tooltip-workload" />
+                <Bar dataKey="workload" fill="#3B82F6" radius={[4, 4, 0, 0]} key="bar-workload" />
+                <Bar dataKey="capacity" fill="#E5E7EB" radius={[4, 4, 0, 0]} key="bar-capacity" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
+              No workstation data available.
+            </div>
+          )}
         </div>
 
         {/* Workforce Utilization Table */}
         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Workforce Utilization</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Workforce Utilization (Active)</h3>
           <div className="space-y-4">
-            {utilizationData.map((worker, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <div>
-                    <div className="font-medium text-gray-900">{worker.name}</div>
-                    <div className="text-gray-500">{worker.station}</div>
+            {utilizationData.length > 0 ? (
+              utilizationData.map((worker, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div>
+                      <div className="font-medium text-gray-900">{worker.name}</div>
+                      <div className="text-gray-500">{worker.station}</div>
+                    </div>
+                    <div className="font-semibold text-gray-900">{worker.utilization}%</div>
                   </div>
-                  <div className="font-semibold text-gray-900">{worker.utilization}%</div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div
+                      className={`h-2.5 rounded-full ${
+                        worker.utilization >= 90 ? 'bg-red-500' :
+                        worker.utilization >= 75 ? 'bg-green-500' :
+                        'bg-yellow-500'
+                      }`}
+                      style={{ width: `${worker.utilization}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className={`h-2.5 rounded-full ${
-                      worker.utilization >= 90 ? 'bg-green-500' :
-                      worker.utilization >= 75 ? 'bg-blue-500' :
-                      'bg-yellow-500'
-                    }`}
-                    style={{ width: `${worker.utilization}%` }}
-                  />
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No active workers logged today.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
 
       {/* Alert Panel */}
       <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Alerts & Recommendations</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Live Alerts & Recommendations</h3>
         <div className="space-y-3">
-          {alerts.map((alert, index) => (
+          {liveAlerts.map((alert, index) => (
             <div
               key={index}
               className={`p-4 rounded-lg border ${
