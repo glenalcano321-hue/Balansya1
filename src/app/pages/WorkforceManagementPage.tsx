@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Edit, Archive, Search, Filter, UserPlus, Users } from 'lucide-react';
+import { Edit, Archive, Search, Filter, UserPlus, Users, Wand2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
@@ -9,6 +9,18 @@ import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 
 import { useWorkforce, WorkerStatus } from '../components/WorkforceState';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
+const demoWorkers = [
+  { id: 'W-DEMO1', name: 'Chef Gordon Santos', position: 'Head Chef', skillLevel: 5, status: 'present', workTimeMinutes: 0, shiftDurationMinutes: 480, idleTimeMinutes: 480, station: 'Unassigned', tasksCompleted: 0 },
+  { id: 'W-DEMO2', name: 'Maria Reyes', position: 'Sous Chef', skillLevel: 4, status: 'present', workTimeMinutes: 0, shiftDurationMinutes: 480, idleTimeMinutes: 480, station: 'Unassigned', tasksCompleted: 0 },
+  { id: 'W-DEMO3', name: 'Juan Dela Cruz', position: 'Line Cook (Grill)', skillLevel: 3, status: 'present', workTimeMinutes: 0, shiftDurationMinutes: 480, idleTimeMinutes: 480, station: 'Unassigned', tasksCompleted: 0 },
+  { id: 'W-DEMO4', name: 'Ana Gomez', position: 'Line Cook (Fryer)', skillLevel: 3, status: 'absent', workTimeMinutes: 0, shiftDurationMinutes: 480, idleTimeMinutes: 480, station: 'Unassigned', tasksCompleted: 0 },
+  { id: 'W-DEMO5', name: 'Pedro Bautista', position: 'Prep Cook', skillLevel: 2, status: 'present', workTimeMinutes: 0, shiftDurationMinutes: 480, idleTimeMinutes: 480, station: 'Unassigned', tasksCompleted: 0 },
+  { id: 'W-DEMO6', name: 'Elena Cruz', position: 'Prep Cook', skillLevel: 2, status: 'present', workTimeMinutes: 0, shiftDurationMinutes: 480, idleTimeMinutes: 480, station: 'Unassigned', tasksCompleted: 0 },
+  { id: 'W-DEMO7', name: 'Dave Utility', position: 'Dishwasher', skillLevel: 1, status: 'present', workTimeMinutes: 0, shiftDurationMinutes: 480, idleTimeMinutes: 480, station: 'Unassigned', tasksCompleted: 0 },
+  { id: 'W-DEMO8', name: 'Sarah Expediter', position: 'Expediter', skillLevel: 4, status: 'day-off', workTimeMinutes: 0, shiftDurationMinutes: 480, idleTimeMinutes: 480, station: 'Unassigned', tasksCompleted: 0 },
+];
 
 export default function WorkforceManagementPage() {
   const { workers, setWorkers } = useWorkforce();
@@ -17,6 +29,7 @@ export default function WorkforceManagementPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [editingWorker, setEditingWorker] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false);
 
   const filteredWorkers = workers.filter(worker => {
     const matchesSearch = worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,10 +67,10 @@ export default function WorkforceManagementPage() {
         const newWorkers = [...workers];
         newWorkers[existingIndex] = editingWorker;
         setWorkers(newWorkers);
-        toast.success('Worker updated successfully');
+        toast.success('Worker updated successfully. Remember to click Save Availability on the next page to push to the cloud.');
       } else {
         setWorkers([...workers, editingWorker]);
-        toast.success('Worker added successfully. They are now available for assignment.');
+        toast.success('Worker added successfully. Remember to click Save Availability on the next page to push to the cloud.');
       }
     } else {
       toast.error('Worker Name is required');
@@ -75,6 +88,25 @@ export default function WorkforceManagementPage() {
     toast.success('Worker archived');
   };
 
+  const handleLoadDemoData = async () => {
+    if (!window.confirm("This will overwrite your current staff list. Are you sure you want to load the Demo Data?")) return;
+    
+    setIsLoadingDemo(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      await setDoc(doc(db, "globalSettings", "masterRoster"), { workers: demoWorkers as any });
+      await setDoc(doc(db, "dailyWorkforce", today), { workers: demoWorkers as any });
+      
+      setWorkers(demoWorkers as any);
+      toast.success("Capstone Demo Staff loaded into Firebase successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load demo data. Check Firebase connection.");
+    } finally {
+      setIsLoadingDemo(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'present': return 'bg-green-100 text-green-800';
@@ -89,16 +121,29 @@ export default function WorkforceManagementPage() {
   const totalWorkers = workers.length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="space-y-6 pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Workforce Management</h2>
           <p className="text-gray-600 mt-1">Manage global worker profiles, base skills, and employment status</p>
         </div>
-        <Button onClick={handleAddWorker} className="gap-2 bg-blue-600 hover:bg-blue-700">
-          <UserPlus className="w-4 h-4" />
-          Add New Worker
-        </Button>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <Button 
+            onClick={handleLoadDemoData} 
+            disabled={isLoadingDemo}
+            variant="outline" 
+            className="gap-2 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 hover:text-purple-800"
+          >
+            <Wand2 className="w-4 h-4" />
+            {isLoadingDemo ? 'Loading...' : 'Load Demo Staff'}
+          </Button>
+
+          <Button onClick={handleAddWorker} className="gap-2 bg-blue-600 hover:bg-blue-700">
+            <UserPlus className="w-4 h-4" />
+            Add New Worker
+          </Button>
+        </div>
         
         {/* ADD/EDIT WORKER MODAL */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -168,7 +213,7 @@ export default function WorkforceManagementPage() {
                 </div>
                 
                 <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mt-4 text-sm text-blue-800">
-                  <strong>Note:</strong> Saving this profile makes the worker immediately available in the Daily Availability grid and Station Assignment algorithm.
+                  <strong>Note:</strong> Saving this profile adds them locally. Go to the Availability page and click "Save" to push changes to the cloud.
                 </div>
               </div>
             )}
@@ -304,7 +349,7 @@ export default function WorkforceManagementPage() {
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200 border-dashed">
           <Users className="w-10 h-10 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-600 font-medium">No workers found in the database.</p>
-          <p className="text-sm text-gray-500 mt-1">Try adjusting your filters or add a new worker.</p>
+          <p className="text-sm text-gray-500 mt-1">Try clicking 'Load Demo Staff' or add a new worker manually.</p>
         </div>
       )}
     </div>

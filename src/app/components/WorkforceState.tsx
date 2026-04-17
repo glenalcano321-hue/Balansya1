@@ -1,45 +1,73 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 
-// Define the structure of your worker data
 export type WorkerStatus = 'present' | 'absent' | 'day-off' | 'unavailable';
 
-export interface WorkerData {
+export interface Worker {
   id: string;
   name: string;
   position: string;
-  station: string; // Added station for the Utilization Monitor
-  status: WorkerStatus;
   skillLevel: number;
-  shiftDurationMinutes: number;
+  status: WorkerStatus;
   workTimeMinutes: number;
+  shiftDurationMinutes: number;
   idleTimeMinutes: number;
-  tasksCompleted: number; // Added tasks for the Utilization Monitor
+  station: string;
+  tasksCompleted: number;
 }
-
-// Initial Data
-const calculateIdle = (shift: number, work: number) => Math.max(0, shift - work);
-
-const initialWorkers: WorkerData[] = [
-  { id: 'W001', name: 'Maria Santos', position: 'Head Chef', station: 'ST-01', status: 'present', skillLevel: 5, shiftDurationMinutes: 480, workTimeMinutes: 408, idleTimeMinutes: calculateIdle(480, 408), tasksCompleted: 12 },
-  { id: 'W002', name: 'Juan Dela Cruz', position: 'Sous Chef', station: 'ST-02', status: 'present', skillLevel: 4, shiftDurationMinutes: 480, workTimeMinutes: 442, idleTimeMinutes: calculateIdle(480, 442), tasksCompleted: 14 },
-  { id: 'W003', name: 'Ana Reyes', position: 'Line Cook', station: 'ST-03', status: 'present', skillLevel: 3, shiftDurationMinutes: 480, workTimeMinutes: 374, idleTimeMinutes: calculateIdle(480, 374), tasksCompleted: 10 },
-  { id: 'W004', name: 'Pedro Garcia', position: 'Prep Cook', station: 'ST-04', status: 'day-off', skillLevel: 3, shiftDurationMinutes: 480, workTimeMinutes: 0, idleTimeMinutes: 480, tasksCompleted: 0 },
-  { id: 'W005', name: 'Lisa Tan', position: 'Line Cook', station: 'ST-05', status: 'present', skillLevel: 4, shiftDurationMinutes: 480, workTimeMinutes: 456, idleTimeMinutes: calculateIdle(480, 456), tasksCompleted: 15 },
-  { id: 'W006', name: 'Carlos Wong', position: 'Line Lead', station: 'ST-06', status: 'present', skillLevel: 4, shiftDurationMinutes: 480, workTimeMinutes: 394, idleTimeMinutes: calculateIdle(480, 394), tasksCompleted: 11 },
-];
 
 interface WorkforceContextType {
-  workers: WorkerData[];
-  setWorkers: React.Dispatch<React.SetStateAction<WorkerData[]>>;
+  workers: Worker[];
+  setWorkers: (workers: Worker[]) => void;
+  targetDate: string;
+  setTargetDate: (date: string) => void;
+  saveWorkforceToFirebase: () => Promise<void>;
 }
+
+const getTodayString = () => new Date().toISOString().split('T')[0];
 
 const WorkforceContext = createContext<WorkforceContextType | undefined>(undefined);
 
 export function WorkforceProvider({ children }: { children: React.ReactNode }) {
-  const [workers, setWorkers] = useState<WorkerData[]>(initialWorkers);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [targetDate, setTargetDate] = useState<string>(getTodayString());
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, "dailyWorkforce", targetDate), async (docSnap) => {
+      if (docSnap.exists()) {
+        setWorkers(docSnap.data().workers as Worker[]);
+      } else {
+        const masterSnap = await getDoc(doc(db, "globalSettings", "masterRoster"));
+        if (masterSnap.exists()) {
+          const freshRoster = (masterSnap.data().workers as Worker[]).map(w => ({
+             ...w, 
+             status: (w.status === 'unavailable' ? 'unavailable' : 'present') as WorkerStatus,
+             workTimeMinutes: 0,
+             idleTimeMinutes: w.shiftDurationMinutes
+          }));
+          setWorkers(freshRoster);
+        } else {
+          setWorkers([]);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [targetDate]);
+
+  const saveWorkforceToFirebase = async () => {
+    try {
+      await setDoc(doc(db, "dailyWorkforce", targetDate), { workers });
+      await setDoc(doc(db, "globalSettings", "masterRoster"), { workers });
+    } catch (error) {
+      console.error("Error saving workforce to Firebase:", error);
+      throw error;
+    }
+  };
 
   return (
-    <WorkforceContext.Provider value={{ workers, setWorkers }}>
+    <WorkforceContext.Provider value={{ workers, setWorkers, targetDate, setTargetDate, saveWorkforceToFirebase }}>
       {children}
     </WorkforceContext.Provider>
   );
@@ -47,8 +75,6 @@ export function WorkforceProvider({ children }: { children: React.ReactNode }) {
 
 export function useWorkforce() {
   const context = useContext(WorkforceContext);
-  if (context === undefined) {
-    throw new Error('useWorkforce must be used within a WorkforceProvider');
-  }
+  if (context === undefined) throw new Error('useWorkforce must be used within a WorkforceProvider');
   return context;
 }
