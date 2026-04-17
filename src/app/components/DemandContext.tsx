@@ -11,7 +11,10 @@ interface DemandData {
 
 interface DemandContextType {
   demandData: DemandData;
+  targetDate: string;
+  setTargetDate: (date: string) => void;
   updateDemandData: (data: Partial<DemandData>) => void;
+  saveDemandToFirebase: () => Promise<void>; // NEW: The explicit save function
 }
 
 const defaultDemand: DemandData = {
@@ -21,42 +24,49 @@ const defaultDemand: DemandData = {
   adjustedDemand: 150,
 };
 
+const getTodayString = () => new Date().toISOString().split('T')[0];
+
 const DemandContext = createContext<DemandContextType | undefined>(undefined);
 
 export function DemandProvider({ children }: { children: React.ReactNode }) {
   const [demandData, setDemandData] = useState<DemandData>(defaultDemand);
+  const [targetDate, setTargetDate] = useState<string>(getTodayString());
 
-  // 2. READ: Listen to Firebase in real-time
+  // READ: Load data when the date changes
   useEffect(() => {
-    // This creates a listener on a document called "daily-demand" inside a collection called "systemSettings"
-    const unsubscribe = onSnapshot(doc(db, "systemSettings", "daily-demand"), (docSnap) => {
+    const unsubscribe = onSnapshot(doc(db, "demandForecasts", targetDate), (docSnap) => {
       if (docSnap.exists()) {
-        // If data exists in Firebase, update our app!
         setDemandData(docSnap.data() as DemandData);
+      } else {
+        setDemandData(defaultDemand);
       }
     });
-
-    // Cleanup the listener when the app closes
     return () => unsubscribe();
-  }, []);
+  }, [targetDate]);
 
-  // 3. WRITE: Send updates to Firebase
-  const updateDemandData = async (newData: Partial<DemandData>) => {
-    const updatedData = { ...demandData, ...newData };
-    
-    // Optimistically update the UI instantly
-    setDemandData(updatedData); 
+  // WRITE (Local UI Only): Update the screen instantly
+  const updateDemandData = (newData: Partial<DemandData>) => {
+    setDemandData(prev => ({ ...prev, ...newData }));
+  };
 
+  // WRITE (Firebase): Actually send the payload to the cloud
+  const saveDemandToFirebase = async () => {
     try {
-      // Push the new data up to Firebase
-      await setDoc(doc(db, "systemSettings", "daily-demand"), updatedData);
+      await setDoc(doc(db, "demandForecasts", targetDate), demandData);
     } catch (error) {
-      console.error("Error saving demand to Firebase:", error);
+      console.error("Error saving to Firebase:", error);
+      throw error; // Pass the error to the UI so we can show an alert
     }
   };
 
   return (
-    <DemandContext.Provider value={{ demandData, updateDemandData }}>
+    <DemandContext.Provider value={{ 
+      demandData, 
+      targetDate, 
+      setTargetDate, 
+      updateDemandData, 
+      saveDemandToFirebase 
+    }}>
       {children}
     </DemandContext.Provider>
   );
@@ -64,8 +74,6 @@ export function DemandProvider({ children }: { children: React.ReactNode }) {
 
 export function useDemand() {
   const context = useContext(DemandContext);
-  if (context === undefined) {
-    throw new Error('useDemand must be used within a DemandProvider');
-  }
+  if (context === undefined) throw new Error('useDemand must be used within a DemandProvider');
   return context;
 }
