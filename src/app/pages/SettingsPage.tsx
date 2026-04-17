@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Lock, Monitor, Accessibility, User, Info, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Lock, Monitor, Accessibility, User, Info, Save, Database, BellRing } from 'lucide-react';
 import { Switch } from '../components/ui/switch';
 import { Label } from '../components/ui/label';
 import { Button } from '../components/ui/button';
@@ -9,228 +9,230 @@ import { Separator } from '../components/ui/separator';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
-  const [emailNotifications, setEmailNotifications] = useState(true);
   const [criticalAlerts, setCriticalAlerts] = useState(true);
+  const [utilizationAlerts, setUtilizationAlerts] = useState(true);
   const [performanceReports, setPerformanceReports] = useState(false);
-  const [theme, setTheme] = useState('light');
-  const [fontSize, setFontSize] = useState('medium');
+  const [cloudSync, setCloudSync] = useState(false);
+
+  // 1. Initialize state from localStorage so settings persist across reloads
+  const [fontSize, setFontSize] = useState(() => localStorage.getItem('balansya-fontsize') || 'medium');
+
+  // 2. FONT SIZE EFFECT: Watch for font changes and scale the root REM size
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (fontSize === 'small') {
+      root.style.fontSize = '14px'; // Scales Tailwind's rem units down
+    } else if (fontSize === 'large') {
+      root.style.fontSize = '18px'; // Scales Tailwind's rem units up
+    } else {
+      root.style.fontSize = '16px'; // Default standard size
+    }
+    localStorage.setItem('balansya-fontsize', fontSize);
+  }, [fontSize]);
 
   const handleSave = () => {
-    toast.success('Settings saved successfully');
+    toast.success('System preferences saved successfully');
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900">Settings</h2>
-        <p className="text-gray-600 mt-1">Manage your account and application preferences</p>
+        <h2 className="text-2xl font-semibold text-gray-900">System Preferences</h2>
+        <p className="text-gray-600 mt-1">Manage global application settings, alerts, and database connections</p>
       </div>
 
       {/* Account Settings */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <User className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-gray-900">Account Settings</h3>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+          <div className="p-2 bg-blue-100 text-blue-700 rounded-lg">
+            <User className="w-5 h-5" />
           </div>
+          <h3 className="font-bold text-gray-900">Administrator Profile</h3>
         </div>
         <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="full-name">Full Name</Label>
-              <Input id="full-name" defaultValue="Manager Name" />
+              <Label htmlFor="full-name" className="text-gray-700">Full Name</Label>
+              <Input id="full-name" defaultValue="System Administrator" className="focus-visible:ring-blue-500" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" defaultValue="manager@example.com" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Input id="role" defaultValue="Operations Manager" disabled />
+              <Label htmlFor="email" className="text-gray-700">Email Address</Label>
+              <Input id="email" type="email" defaultValue="admin@balansya.local" className="focus-visible:ring-blue-500" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="establishment">Establishment</Label>
-              <Input id="establishment" defaultValue="Sample Culinary Enterprise" />
+              <Label htmlFor="role" className="text-gray-700">Role Designation</Label>
+              <Input id="role" defaultValue="Lean Operations Director" disabled className="bg-gray-50" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="establishment" className="text-gray-700">Enterprise Name</Label>
+              <Input id="establishment" defaultValue="Capstone Culinary Enterprise" className="focus-visible:ring-blue-500" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Privacy Settings */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <Lock className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-gray-900">Privacy & Notifications</h3>
+      {/* Data & Synchronization */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+          <div className="p-2 bg-purple-100 text-purple-700 rounded-lg">
+            <Database className="w-5 h-5" />
           </div>
+          <h3 className="font-bold text-gray-900">Data & Synchronization</h3>
+        </div>
+        <div className="p-6 space-y-6">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 pr-6">
+              <Label className="text-base">Enable Firebase Cloud Sync</Label>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Currently running in Local Storage mode. Toggle this to connect to your Firebase backend for real-time floor synchronization across multiple iPads/devices.
+              </p>
+            </div>
+            <Switch 
+              checked={cloudSync} 
+              onCheckedChange={(val) => {
+                setCloudSync(val);
+                if (val) toast.info('Firebase connection requires .env configuration.');
+              }} 
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* System Alerts */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+          <div className="p-2 bg-red-100 text-red-700 rounded-lg">
+            <BellRing className="w-5 h-5" />
+          </div>
+          <h3 className="font-bold text-gray-900">Workflow Alerts & Notifications</h3>
         </div>
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Email Notifications</Label>
-              <p className="text-sm text-gray-500">Receive email updates about system changes</p>
-            </div>
-            <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Critical Alerts</Label>
-              <p className="text-sm text-gray-500">Get notified about bottlenecks and capacity issues</p>
+            <div className="space-y-0.5 pr-6">
+              <Label className="text-base font-semibold">Takt Time & Bottleneck Alerts</Label>
+              <p className="text-sm text-gray-500">Trigger UI warnings when a station's cycle time exceeds the required takt time.</p>
             </div>
             <Switch checked={criticalAlerts} onCheckedChange={setCriticalAlerts} />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Daily Performance Reports</Label>
-              <p className="text-sm text-gray-500">Receive daily summary reports via email</p>
+            <div className="space-y-0.5 pr-6">
+              <Label className="text-base font-semibold">Worker Utilization Warnings</Label>
+              <p className="text-sm text-gray-500">Get notified if the auto-assigner places a worker at &gt;90% capacity (fatigue risk).</p>
+            </div>
+            <Switch checked={utilizationAlerts} onCheckedChange={setUtilizationAlerts} />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 pr-6">
+              <Label className="text-base font-semibold">Daily Efficiency Reports</Label>
+              <p className="text-sm text-gray-500">Compile end-of-shift waste reduction metrics and utilization summaries.</p>
             </div>
             <Switch checked={performanceReports} onCheckedChange={setPerformanceReports} />
           </div>
         </div>
       </div>
 
-      {/* Display Settings */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <Monitor className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-gray-900">Display Settings</h3>
+      {/* UI Settings */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Display Settings */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+            <div className="p-2 bg-gray-100 text-gray-700 rounded-lg">
+              <Monitor className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-gray-900">Display</h3>
+          </div>
+          <div className="p-6 space-y-5">
+            <div className="space-y-2">
+              <Label>Font Size</Label>
+              <Select value={fontSize} onValueChange={setFontSize}>
+                <SelectTrigger className="focus:ring-blue-500">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="small">Compact</SelectItem>
+                  <SelectItem value="medium">Standard</SelectItem>
+                  <SelectItem value="large">Large (Kitchen Display)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
-        <div className="p-6 space-y-6">
-          <div className="space-y-2">
-            <Label>Theme</Label>
-            <Select value={theme} onValueChange={setTheme}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="auto">Auto</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Font Size</Label>
-            <Select value={fontSize} onValueChange={setFontSize}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="small">Small</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="large">Large</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Date Format</Label>
-            <Select defaultValue="mdy">
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mdy">MM/DD/YYYY</SelectItem>
-                <SelectItem value="dmy">DD/MM/YYYY</SelectItem>
-                <SelectItem value="ymd">YYYY-MM-DD</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Time Format</Label>
-            <Select defaultValue="12h">
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
-                <SelectItem value="24h">24-hour</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
 
-      {/* Accessibility Settings */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <Accessibility className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-gray-900">Accessibility</h3>
-          </div>
-        </div>
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>High Contrast Mode</Label>
-              <p className="text-sm text-gray-500">Increase contrast for better visibility</p>
+        {/* Accessibility Settings */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+            <div className="p-2 bg-gray-100 text-gray-700 rounded-lg">
+              <Accessibility className="w-5 h-5" />
             </div>
-            <Switch />
+            <h3 className="font-bold text-gray-900">Accessibility</h3>
           </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Reduce Motion</Label>
-              <p className="text-sm text-gray-500">Minimize animations and transitions</p>
+          <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>High Contrast Mode</Label>
+                <p className="text-xs text-gray-500">For bright kitchen environments</p>
+              </div>
+              <Switch />
             </div>
-            <Switch />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Keyboard Navigation</Label>
-              <p className="text-sm text-gray-500">Enhanced keyboard shortcuts</p>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Reduce Motion</Label>
+                <p className="text-xs text-gray-500">Disable UI animations</p>
+              </div>
+              <Switch />
             </div>
-            <Switch defaultChecked />
           </div>
         </div>
       </div>
 
       {/* About Section */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <Info className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-gray-900">About Balansya</h3>
+      <div className="bg-gradient-to-br from-blue-900 to-indigo-900 rounded-xl shadow-lg p-8 text-white relative overflow-hidden">
+        <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white opacity-5 blur-3xl pointer-events-none"></div>
+        
+        <div className="flex items-start gap-4 relative z-10">
+          <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+            <Info className="w-8 h-8 text-blue-200" />
           </div>
-        </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <h4 className="font-medium text-gray-900 mb-1">Balansya Workforce Optimization System</h4>
-            <p className="text-sm text-gray-600">Version 1.0.0</p>
-          </div>
-          <Separator />
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">Capstone Project Team</h4>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              A skill matching and production line balancing system designed specifically for small culinary enterprises (MSMEs).
-              This system helps managers optimize workforce allocation, reduce bottlenecks, and improve operational efficiency.
+          <div className="space-y-3 flex-1">
+            <div>
+              <h4 className="text-xl font-bold mb-1">Balansya</h4>
+              <p className="text-blue-200 text-sm font-medium tracking-wide uppercase">Workforce Optimization System</p>
+            </div>
+            <p className="text-sm text-blue-100 leading-relaxed max-w-2xl">
+              A skill matching and production line balancing system designed specifically for small culinary enterprises (MSMEs). 
+              Applying Lean Six Sigma methodologies to optimize workforce allocation, reduce operational waste, and improve flow.
             </p>
-          </div>
-          <Separator />
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">Credits</h4>
-            <p className="text-sm text-gray-600">
-              Developed as a capstone project - 2026
-            </p>
-            <p className="text-sm text-gray-600 mt-1">
-              © 2026 Balansya Team. All rights reserved.
-            </p>
+            <div className="pt-4 mt-4 border-t border-white/20 grid grid-cols-2 gap-4 text-xs text-blue-200">
+              <div>
+                <span className="opacity-70 block mb-0.5">Development</span>
+                <span className="font-semibold text-white">Capstone Project 2026</span>
+              </div>
+              <div>
+                <span className="opacity-70 block mb-0.5">Location</span>
+                <span className="font-semibold text-white">Iloilo City, Philippines</span>
+              </div>
+              <div>
+                <span className="opacity-70 block mb-0.5">System Version</span>
+                <span className="font-semibold text-white">v2.0.01-stable</span>
+              </div>
+              <div>
+                <span className="opacity-70 block mb-0.5">License</span>
+                <span className="font-semibold text-white">Academic / Research</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Save Button */}
-      <div className="flex justify-end gap-3">
-        <Button variant="outline">Cancel</Button>
-        <Button onClick={handleSave} className="gap-2">
+      <div className="flex justify-end gap-3 sticky bottom-6 bg-gray-50/80 p-4 rounded-xl backdrop-blur-md border border-gray-200/50 shadow-sm z-50">
+        <Button variant="outline" className="bg-white">Discard Changes</Button>
+        <Button onClick={handleSave} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
           <Save className="w-4 h-4" />
-          Save Changes
+          Save System Preferences
         </Button>
       </div>
     </div>

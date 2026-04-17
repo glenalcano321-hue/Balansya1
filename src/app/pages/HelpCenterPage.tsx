@@ -4,74 +4,62 @@ import { BookOpen, Calculator, HelpCircle, FileQuestion, ChevronDown, ChevronRig
 const helpSections = [
   {
     id: 'getting-started',
-    title: 'Getting Started',
+    title: 'Getting Started with Balansya',
     icon: BookOpen,
     topics: [
       {
-        title: 'How to Use Balansya',
-        content: 'Balansya is a daily operations tool for culinary enterprises. Start by setting up your workforce availability, then input your daily menu and expected demand. The system will analyze workload distribution and provide station assignment recommendations.'
+        title: 'The Lean Six Sigma Approach',
+        content: 'Balansya is a Workforce Optimization System designed for culinary enterprises. It applies Lean Six Sigma methodologies to identify production bottlenecks, eliminate waste (muda), and balance kitchen workloads. By synchronizing live demand with actual worker capabilities, Balansya ensures continuous, efficient operational flow.'
       },
       {
-        title: 'Daily Workflow',
-        content: 'Follow this sequence: 1) Update Workforce Availability → 2) Input Daily Menu → 3) Set Demand & Events → 4) Review Skill Matrix → 5) Check Takt Time Analysis → 6) Monitor Utilization → 7) Identify Bottlenecks → 8) Review Station Assignments → 9) Monitor Dashboard'
+        title: 'The Daily Operations Workflow',
+        content: 'For optimal results, managers should follow this daily sequence:\n\n1) Daily Setup: Log active staff in Workforce Availability, select the active Menu, and input Expected Demand.\n2) System Analysis: Review the Skill Matrix to match competencies, check Takt Time Analysis for capacity limits, and monitor live Utilization.\n3) Recommendations: Use the Bottleneck Detector to find constraints, run the Auto-Assigner in Station Assignment, and map the physical flow in the Kitchen Layout Editor.\n4) Monitoring: Track live metrics on the Dashboard and review historical data in Performance Reports.'
       },
       {
-        title: 'Navigating the System',
-        content: 'Use the left sidebar to access different modules. The workflow progress bar at the top shows your current position in the daily setup process. Click on any module to jump directly to that page.'
+        title: 'Navigating the Interface',
+        content: 'The left sidebar serves as your primary navigation, grouped logically by the daily workflow stages. The top header displays your progress through the daily setup. If you ever need to quickly jump to a global overview, click the "Balansya" logo to return to the main Dashboard.'
       }
     ]
   },
   {
     id: 'formulas',
-    title: 'System Formulas',
+    title: 'Lean Six Sigma Formulas',
     icon: Calculator,
     topics: [
       {
-        title: 'Takt Time Formula',
-        content: 'Takt Time = Available Working Time / Expected Demand\n\nExample: If you have 480 minutes (8 hours) of available working time and expect 200 orders:\nTakt Time = 480 minutes / 200 orders = 2.4 minutes per order (144 seconds)\n\nThis tells you how frequently you need to complete an order to meet demand.'
+        title: 'Takt Time (Pace of Customer Demand)',
+        content: 'Takt Time = Net Available Production Time / Expected Customer Demand\n\nExample: If your kitchen operates for 8 hours (28,800 seconds) and you expect 200 orders today:\nTakt Time = 28,800 / 200 = 144 seconds per order.\n\nThis is the critical "heartbeat" of your kitchen. If any single workstation takes longer than 144 seconds (Cycle Time > Takt Time), you will inevitably fall behind and fail to meet customer demand.'
       },
       {
-        title: 'Utilization Formula',
-        content: 'Utilization % = (Total Work Time / Available Time) × 100\n\nExample: If a worker has 6 hours (360 minutes) of tasks and 8 hours (480 minutes) available:\nUtilization = (360 / 480) × 100 = 75%\n\nGood utilization range: 75-90%. Below 75% indicates idle time, above 90% may cause burnout.'
+        title: 'Workforce Utilization',
+        content: 'Utilization % = (Active Productive Time / Total Shift Duration) × 100\n\nBalansya targets a "Goldilocks Zone" of 75% - 90% utilization.\n• < 75%: Indicates excess idle time and wasted labor capacity. Workers should be reassigned to support other stations.\n• > 90%: Indicates a severe risk of worker fatigue, safety hazards, and quality defects.'
       },
       {
-        title: 'Line Efficiency Formula',
-        content: 'Line Efficiency % = (Actual Output / Theoretical Maximum Output) × 100\n\nExample: If your kitchen can theoretically produce 250 orders but actually produces 230:\nLine Efficiency = (230 / 250) × 100 = 92%\n\nHigher efficiency means better use of resources and less waste.'
-      },
-      {
-        title: 'Bottleneck Identification',
-        content: 'A station is identified as a bottleneck when:\n\n1. Utilization > 95%\n2. Task time > Takt time\n3. Queue pressure is high\n4. Processing time is slowest in the line\n\nThe system highlights these stations for immediate attention and rebalancing.'
+        title: 'Station Capacity Calculation',
+        content: 'Max Daily Capacity = (Net Available Time / Station Cycle Time) × Physical Worker Slots\n\nThis formula calculates the absolute maximum number of units a specific physical station can output in a day. If this number is lower than your Expected Demand, that station is a guaranteed bottleneck.'
       }
     ]
   },
   {
     id: 'modules',
-    title: 'Module Instructions',
+    title: 'Module Deep-Dives',
     icon: HelpCircle,
     topics: [
       {
-        title: 'Workforce Management',
-        content: 'Add and manage worker profiles including skills, experience, and employment status. This data feeds into skill matrix and assignment recommendations.\n\nKey Actions:\n- Add new workers with complete profiles\n- Edit existing worker information\n- Archive resigned workers\n- Track training and competencies'
+        title: 'Workstation Setup & Kitchen Layout',
+        content: 'The Workstation Setup is your global database of physical kitchen zones and their standard tasks. The Kitchen Layout Editor allows you to visually map these stations to minimize physical travel waste (motion waste). Changes made in the Layout Editor automatically sync with the global database.'
       },
       {
-        title: 'Daily Availability',
-        content: 'Mark which workers are present, absent, or on leave for the current day. This affects all downstream calculations.\n\nKey Actions:\n- Update attendance status daily\n- Set work schedules\n- Note special conditions (half-day, training, etc.)'
+        title: 'Demand Input & Event Multipliers',
+        content: 'This module establishes your daily target. You can set a baseline expectation and apply Event Multipliers (e.g., 1.5x for Peak Days or 1.8x for Promos). This final "Adjusted Demand" is globally linked to the Takt Time Analysis to instantly show if your current staff can handle the rush.'
       },
       {
-        title: 'Menu Input',
-        content: 'Define dishes, preparation times, and complexity. Active menu items affect workload calculations.\n\nKey Actions:\n- Add new menu items\n- Set preparation, cooking, and plating times\n- Mark items as active for the day\n- Specify required skills and stations'
+        title: 'Skill Matrix Analysis',
+        content: 'Not all workers are equally efficient at every task. The Skill Matrix allows you to rate workers on a 1-5 scale across different stations. Balansya uses this data to calculate "Skill Bonuses," which can reduce a station\'s Cycle Time if a highly skilled worker is assigned there.'
       },
       {
-        title: 'Demand & Events',
-        content: 'Input expected orders and special conditions that affect workload and timing.\n\nKey Actions:\n- Set expected order count\n- Define peak hours\n- Select event type (normal, promo, holiday, catering)\n- Set service mode (dine-in, takeout, mixed)'
-      },
-      {
-        title: 'Skill Matrix',
-        content: 'View and edit worker skill ratings for each station type. The system prioritizes available workers.\n\nKey Actions:\n- Rate worker skills (1-5 scale)\n- Review skill gaps\n- Filter by availability\n- Update competency levels'
-      },
-      {
-        title: 'Station Assignment',
-        content: 'View system recommendations and manually adjust worker-to-station assignments.\n\nKey Actions:\n- Review recommended assignments\n- Override with manual assignments\n- Check skill match levels\n- Save changes for the day'
+        title: 'Station Assignment (Auto-Assigner)',
+        content: 'The Station Assignment engine uses a proprietary algorithm to automatically distribute your present workers to the stations where they are most skilled. It actively attempts to balance the workload to prevent any single station from exceeding 90% utilization. Managers can manually click a dropdown to override these suggestions.'
       }
     ]
   },
@@ -81,28 +69,16 @@ const helpSections = [
     icon: FileQuestion,
     topics: [
       {
-        title: 'What is a good utilization percentage?',
-        content: 'Optimal utilization is 75-90%. Below 75% means idle time and potential for more work. Above 90% risks worker fatigue and errors. At 100%, workers have no buffer for breaks or unexpected issues.'
+        title: 'How does the Bottleneck Detector work?',
+        content: 'The system automatically flags a station as a bottleneck (Red Alert) if its calculated Capacity is lower than your Expected Demand, or if its Cycle Time exceeds the global Takt Time. It will issue a Warning (Yellow Alert) if a station is operating above 90% utilization.'
       },
       {
-        title: 'How do I handle bottlenecks?',
-        content: 'When the system identifies a bottleneck:\n\n1. Check if you can reassign tasks to other stations\n2. Add another worker to that station if available\n3. Simplify or streamline the process\n4. Consider if some prep work can be done in advance\n5. Use the Station Assignment page to implement changes'
+        title: 'Why did my data disappear after refreshing the page?',
+        content: 'If you have not connected a backend database (like Firebase), Balansya uses your browser\'s Local Storage to save your data globally across pages. If you clear your browser cache, the system will revert to its default template data.'
       },
       {
-        title: 'Why does takt time matter?',
-        content: 'Takt time sets the rhythm for your kitchen. If any station takes longer than takt time, you\'ll fall behind on orders. All stations should complete their work within the takt time to maintain smooth flow.'
-      },
-      {
-        title: 'Can I override system recommendations?',
-        content: 'Yes! Balansya provides recommendations based on data, but you can manually override any assignment. The system shows both the recommended and your custom assignments.'
-      },
-      {
-        title: 'How often should I update the system?',
-        content: 'Update daily before service begins:\n\n- Morning: Set workforce availability\n- Before service: Input menu and demand\n- During service: Monitor dashboard for issues\n- End of day: Review performance reports'
-      },
-      {
-        title: 'What if I don\'t have exact time data?',
-        content: 'Start with estimates. Observe actual performance and refine your numbers over time. Even approximate data helps identify patterns and improvement opportunities.'
+        title: 'Can I add custom tasks to a workstation?',
+        content: 'Yes! Navigate to the Workstation Setup page. You can click the "Edit" icon on any station to add specific tasks, assign their standard completion times (in minutes), and define their complexity. The sum of these tasks becomes that station\'s total Cycle Time.'
       }
     ]
   }
@@ -123,8 +99,8 @@ export default function HelpCenterPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900">Help Center</h2>
-        <p className="text-gray-600 mt-1">Comprehensive guide to using Balansya effectively</p>
+        <h2 className="text-2xl font-semibold text-gray-900">Balansya Documentation</h2>
+        <p className="text-gray-600 mt-1">System guidelines, Lean Six Sigma methodologies, and troubleshooting</p>
       </div>
 
       {/* Quick Links */}
@@ -135,15 +111,15 @@ export default function HelpCenterPage() {
             <button
               key={section.id}
               onClick={() => toggleSection(section.id)}
-              className={`p-4 rounded-lg border-2 transition-all text-left ${
+              className={`p-4 rounded-xl border-2 transition-all text-left shadow-sm ${
                 expandedSection === section.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-blue-300'
+                  ? 'border-blue-500 bg-blue-50/50 shadow-md transform -translate-y-0.5'
+                  : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
               }`}
             >
-              <Icon className="w-6 h-6 text-blue-600 mb-2" />
-              <div className="font-medium text-gray-900">{section.title}</div>
-              <div className="text-xs text-gray-500 mt-1">{section.topics.length} topics</div>
+              <Icon className="w-6 h-6 text-blue-600 mb-3" />
+              <div className="font-bold text-gray-900">{section.title}</div>
+              <div className="text-xs font-medium text-gray-500 mt-1">{section.topics.length} detailed topics</div>
             </button>
           );
         })}
@@ -156,43 +132,48 @@ export default function HelpCenterPage() {
           const isExpanded = expandedSection === section.id;
 
           return (
-            <div key={section.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div key={section.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-all duration-200">
               <button
                 onClick={() => toggleSection(section.id)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className={`w-full px-6 py-5 flex items-center justify-between transition-colors ${isExpanded ? 'bg-gray-50/80 border-b border-gray-100' : 'hover:bg-gray-50'}`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold text-gray-900">{section.title}</h3>
+                  <div className={`p-2 rounded-lg ${isExpanded ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">{section.title}</h3>
                 </div>
-                {isExpanded ? (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                )}
+                <div className={`p-1.5 rounded-full transition-colors ${isExpanded ? 'bg-gray-200' : 'group-hover:bg-gray-200'}`}>
+                  {isExpanded ? (
+                    <ChevronDown className="w-5 h-5 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  )}
+                </div>
               </button>
 
               {isExpanded && (
-                <div className="px-6 pb-4 space-y-2">
+                <div className="p-6 space-y-3 bg-white">
                   {section.topics.map((topic, index) => {
                     const isTopicExpanded = expandedTopic === `${section.id}-${topic.title}`;
 
                     return (
-                      <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <div key={index} className={`rounded-lg border transition-all duration-200 overflow-hidden ${isTopicExpanded ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 hover:border-blue-300'}`}>
                         <button
                           onClick={() => toggleTopic(`${section.id}-${topic.title}`)}
-                          className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                          className="w-full px-5 py-4 flex items-center justify-between text-left"
                         >
-                          <span className="font-medium text-gray-900 text-sm">{topic.title}</span>
+                          <span className={`font-semibold text-sm ${isTopicExpanded ? 'text-blue-900' : 'text-gray-800'}`}>{topic.title}</span>
                           {isTopicExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
+                            <ChevronDown className="w-4 h-4 text-blue-500 flex-shrink-0 ml-2" />
                           ) : (
                             <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
                           )}
                         </button>
 
                         {isTopicExpanded && (
-                          <div className="px-4 pb-4 pt-2">
+                          <div className="px-5 pb-5 pt-1">
+                            <div className="w-8 h-1 bg-blue-200 rounded-full mb-3"></div>
                             <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
                               {topic.content}
                             </p>
@@ -208,15 +189,22 @@ export default function HelpCenterPage() {
         })}
       </div>
 
-      {/* Contact Support */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="font-semibold text-blue-900 mb-2">Need More Help?</h3>
-        <p className="text-sm text-blue-800 mb-4">
-          If you can't find the answer you're looking for, please contact your system administrator or capstone project team.
-        </p>
-        <div className="text-xs text-blue-700">
-          <p>Balansya - Workforce Optimization System for Culinary Enterprises</p>
-          <p className="mt-1">Capstone Project 2026</p>
+      {/* Capstone Footer */}
+      <div className="bg-gradient-to-br from-blue-900 to-indigo-900 rounded-xl p-8 text-white shadow-lg mt-8 relative overflow-hidden">
+        {/* Decorative background circle */}
+        <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white opacity-5 blur-3xl pointer-events-none"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h3 className="text-xl font-bold mb-2">Balansya: Workforce Optimization System</h3>
+            <p className="text-blue-100 text-sm max-w-2xl leading-relaxed">
+              Developed as a 2026 Capstone Project. This system is designed to apply industrial engineering principles to culinary operations, demonstrating the practical value of workload balancing and constraint identification.
+            </p>
+          </div>
+          <div className="flex-shrink-0 bg-white/10 backdrop-blur-sm border border-white/20 px-6 py-4 rounded-lg text-center">
+            <p className="text-xs text-blue-200 uppercase tracking-widest font-bold mb-1">Version</p>
+            <p className="text-2xl font-black">2.0.01</p>
+          </div>
         </div>
       </div>
     </div>
