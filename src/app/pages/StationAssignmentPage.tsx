@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { useSkills } from '../components/SkillContext'; 
 import { useWorkstations } from '../components/WorkstationContext'; 
 import { useWorkforce } from '../components/WorkforceState'; 
+import { useDemand } from '../components/DemandContext'; // Imported Demand Context
 import { toast } from 'sonner';
 
 interface AssignedWorker {
@@ -25,6 +26,10 @@ export default function StationAssignmentPage() {
   const { globalSkills } = useSkills(); 
   const { workstations } = useWorkstations(); 
   const { workers, setWorkers, targetDate, setTargetDate, saveWorkforceToFirebase } = useWorkforce();
+  
+  // Fetch live demand data
+  const { demandData } = useDemand();
+  const liveDemand = demandData?.adjustedDemand || 0;
   
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [optimizing, setOptimizing] = useState(false);
@@ -57,7 +62,15 @@ export default function StationAssignmentPage() {
           const skillBonus = avgSkill * (parallelCycleTime * 0.10);
           
           cycleTime = Math.max(1, Math.round(parallelCycleTime - skillBonus));
-          utilization = avgSkill < 3 ? Math.floor(95 + (Math.random() * 15)) : Math.floor(70 + (Math.random() * 20));
+          
+          // REAL MATH APPLIED: (Total Workload Minutes) / (Total Shift Capacity Minutes)
+          if (liveDemand > 0) {
+            const workloadMinutes = liveDemand * cycleTime;
+            const capacityMinutes = 480 * (ws.capacity || 1); // 480 mins = 8 hours
+            utilization = Math.round((workloadMinutes / capacityMinutes) * 100);
+          } else {
+            utilization = 0;
+          }
         }
 
         return {
@@ -71,7 +84,7 @@ export default function StationAssignmentPage() {
         };
       }));
     }
-  }, [workstations, workers, globalSkills, targetDate]);
+  }, [workstations, workers, globalSkills, targetDate, liveDemand]); // Added liveDemand as dependency
 
   const handleOptimize = () => {
     if (activeWorkers.length === 0) {
@@ -267,7 +280,6 @@ export default function StationAssignmentPage() {
                         >
                           <option value="Unassigned">Select Worker...</option>
                           {activeWorkers.map((worker) => {
-                            // Check if the worker is assigned somewhere else
                             const isCurrentlyInThisSlot = worker.name === currentWorkerName;
                             const isAvailable = worker.station === 'Unassigned';
                             const isAssignedElsewhere = !isAvailable && !isCurrentlyInThisSlot;
