@@ -1,28 +1,8 @@
 import { useState } from 'react';
-import { UtensilsCrossed, Clock, ChevronRight, Plus, Minus, X } from 'lucide-react';
-import { Link } from 'react-router'; // Note: Usually 'react-router-dom' in standard Vite setups
-
-interface MenuItem {
-  id: string;
-  name: string;
-  category: 'main-dish' | 'appetizer' | 'dessert' | 'beverage';
-  prepTime: number;
-  cookTime: number;
-  plateTime: number;
-  active: boolean;
-  expectedOrders: number;
-}
-
-const initialMenuItems: MenuItem[] = [
-  { id: 'M001', name: 'Chicken Adobo', category: 'main-dish', prepTime: 15, cookTime: 45, plateTime: 5, active: true, expectedOrders: 35 },
-  { id: 'M002', name: 'Sinigang na Baboy', category: 'main-dish', prepTime: 20, cookTime: 50, plateTime: 5, active: true, expectedOrders: 28 },
-  { id: 'M003', name: 'Beef Kare-Kare', category: 'main-dish', prepTime: 25, cookTime: 60, plateTime: 5, active: false, expectedOrders: 0 },
-  { id: 'M004', name: 'Lumpia Shanghai', category: 'appetizer', prepTime: 30, cookTime: 10, plateTime: 3, active: true, expectedOrders: 45 },
-  { id: 'M005', name: 'Pancit Canton', category: 'main-dish', prepTime: 15, cookTime: 20, plateTime: 4, active: true, expectedOrders: 32 },
-  { id: 'M006', name: 'Halo-Halo', category: 'dessert', prepTime: 10, cookTime: 0, plateTime: 5, active: true, expectedOrders: 20 },
-  { id: 'M007', name: 'Lechon Kawali', category: 'main-dish', prepTime: 20, cookTime: 40, plateTime: 5, active: false, expectedOrders: 0 },
-  { id: 'M008', name: 'Mango Shake', category: 'beverage', prepTime: 5, cookTime: 0, plateTime: 2, active: true, expectedOrders: 25 },
-];
+import { UtensilsCrossed, Clock, ChevronRight, Plus, Minus, X, Save, Calendar } from 'lucide-react';
+import { Link } from 'react-router';
+import { useMenu, MenuItem } from '../components/MenuContext';
+import { toast } from 'sonner';
 
 const categoryLabels = {
   'main-dish': 'Main Dish',
@@ -32,9 +12,9 @@ const categoryLabels = {
 };
 
 export default function MenuInputPage() {
-  const [items, setItems] = useState<MenuItem[]>(initialMenuItems);
+  const { items, setItems, targetDate, setTargetDate, saveMenuToFirebase } = useMenu();
+  const [isSaving, setIsSaving] = useState(false);
   
-  // State for the Add Recipe Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newItem, setNewItem] = useState({
     name: '',
@@ -59,7 +39,6 @@ export default function MenuInputPage() {
   const handleAddNewRecipe = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Generate a simple ID (e.g., M009)
     const newId = `M${String(items.length + 1).padStart(3, '0')}`;
     
     const recipeToAdd: MenuItem = {
@@ -69,14 +48,12 @@ export default function MenuInputPage() {
       prepTime: Number(newItem.prepTime) || 0,
       cookTime: Number(newItem.cookTime) || 0,
       plateTime: Number(newItem.plateTime) || 0,
-      active: true, // Auto-activate new recipes
-      expectedOrders: 20 // Default starting expected orders
+      active: true,
+      expectedOrders: 20
     };
 
     setItems([...items, recipeToAdd]);
-    setIsAddModalOpen(false); // Close modal
-    
-    // Reset form
+    setIsAddModalOpen(false); 
     setNewItem({
       name: '',
       category: 'main-dish',
@@ -86,26 +63,52 @@ export default function MenuInputPage() {
     });
   };
 
+  const handleSaveToDatabase = async () => {
+    setIsSaving(true);
+    try {
+      await saveMenuToFirebase();
+      toast.success(`Menu for ${targetDate} saved successfully!`);
+    } catch (error) {
+      toast.error('Failed to save Menu to Firebase.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const activeItems = items.filter(item => item.active);
   const totalPrepTime = activeItems.reduce((sum, item) => sum + (item.prepTime * item.expectedOrders / 60), 0);
   const totalCookTime = activeItems.reduce((sum, item) => sum + (item.cookTime * item.expectedOrders / 60), 0);
   const totalOrders = activeItems.reduce((sum, item) => sum + item.expectedOrders, 0);
 
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-6 relative pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Daily Menu Input</h2>
           <p className="text-gray-600 mt-1">Select active menu items and set expected order volumes</p>
         </div>
-        <Link
-          to="/demand-input"
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-        >
-          Next: Demand Input
-          <ChevronRight className="w-4 h-4" />
-        </Link>
+        
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 flex items-center gap-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 transition-shadow">
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <input 
+              type="date" 
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+              className="border-none outline-none text-sm font-medium text-gray-700 bg-transparent cursor-pointer w-full"
+            />
+          </div>
+
+          <button
+            onClick={handleSaveToDatabase}
+            disabled={isSaving}
+            className="flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {isSaving ? 'Saving...' : 'Save Menu'}
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -133,13 +136,12 @@ export default function MenuInputPage() {
 
       {/* Menu Items Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+        <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Menu Configuration</h3>
             <p className="text-sm text-gray-600 mt-1">Toggle items and adjust expected orders for today</p>
           </div>
           
-          {/* Add Recipe Button */}
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors border border-blue-200"
@@ -155,12 +157,12 @@ export default function MenuInputPage() {
               key={item.id}
               className={`p-6 transition-colors ${item.active ? 'bg-white' : 'bg-gray-50'}`}
             >
-              <div className="flex items-center justify-between gap-6">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                 {/* Menu Item Info */}
-                <div className="flex items-center gap-4 flex-1">
+                <div className="flex items-center gap-4 flex-1 w-full">
                   <button
                     onClick={() => toggleActive(item.id)}
-                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                       item.active
                         ? 'bg-blue-600 border-blue-600'
                         : 'bg-white border-gray-300'
@@ -169,33 +171,33 @@ export default function MenuInputPage() {
                     {item.active && <div className="w-3 h-3 bg-white rounded-sm" />}
                   </button>
 
-                  <UtensilsCrossed className={`w-10 h-10 p-2 rounded-lg ${
+                  <UtensilsCrossed className={`w-10 h-10 p-2 rounded-lg flex-shrink-0 ${
                     item.active ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-400'
                   }`} />
 
                   <div className="flex-1">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className={`font-medium ${item.active ? 'text-gray-900' : 'text-gray-500'}`}>
                         {item.name}
                       </span>
-                      <span className={`text-xs px-2 py-1 rounded ${
+                      <span className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
                         item.active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
                       }`}>
                         {categoryLabels[item.category]}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                    <div className="flex flex-wrap items-center gap-4 mt-1 text-sm text-gray-600">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
-                        Prep: {item.prepTime}min
+                        Prep: {item.prepTime}m
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
-                        Cook: {item.cookTime}min
+                        Cook: {item.cookTime}m
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
-                        Plate: {item.plateTime}min
+                        Plate: {item.plateTime}m
                       </span>
                     </div>
                   </div>
@@ -203,7 +205,7 @@ export default function MenuInputPage() {
 
                 {/* Order Volume Control */}
                 {item.active && (
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 lg:ml-auto w-full lg:w-auto mt-2 lg:mt-0 pl-10 lg:pl-0">
                     <span className="text-sm text-gray-600 whitespace-nowrap">Expected Orders:</span>
                     <div className="flex items-center gap-2">
                       <button
@@ -331,6 +333,17 @@ export default function MenuInputPage() {
           </div>
         </div>
       )}
+      
+      {/* Proceed Button */}
+      <div className="flex justify-end pt-4">
+         <Link
+            to="/demand-input"
+            className="flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-md"
+          >
+            Proceed to Demand Input
+            <ChevronRight className="w-5 h-5" />
+          </Link>
+      </div>
     </div>
   );
 }

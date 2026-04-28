@@ -6,6 +6,7 @@ import { WorkforceProvider } from './components/WorkforceState';
 import { SkillProvider } from './components/SkillContext'; 
 import { WorkstationProvider } from './components/WorkstationContext';
 import { DemandProvider } from './components/DemandContext';
+import { MenuProvider } from './components/MenuContext';
 
 export default function App() {
   return (
@@ -14,8 +15,10 @@ export default function App() {
         <SkillProvider> 
           <WorkstationProvider>
             <DemandProvider>
-              <RouterProvider router={router} />
-              <Toaster />
+              <MenuProvider>
+                <RouterProvider router={router} />
+                <Toaster />
+              </MenuProvider>
             </DemandProvider>
           </WorkstationProvider>
         </SkillProvider>
